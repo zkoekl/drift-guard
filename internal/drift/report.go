@@ -17,6 +17,7 @@ func ReportHTML(events []Event) string {
 	writeSessions(&b, events)
 	writeAmbiguous(&b, events)
 	writeDisputed(&b, events)
+	writeUnrequested(&b, events)
 	writeLogOnly(&b, events)
 	writeCatches(&b, events)
 	writeFalseAlarms(&b, events)
@@ -172,6 +173,43 @@ func writeAmbiguous(b *strings.Builder, events []Event) {
 		b.WriteString("</ul>\n")
 	}
 	b.WriteString("</section>\n")
+}
+
+func writeUnrequested(b *strings.Builder, events []Event) {
+	var rows []Event
+	for _, ev := range events {
+		if ev.Kind == "unrequested-delete" {
+			rows = append(rows, ev)
+		}
+	}
+	b.WriteString("<section id=\"unrequested-delete\">\n<h2>Unrequested deletes</h2>\n")
+	if len(rows) == 0 {
+		b.WriteString("<p class=\"empty\">No data yet.</p>\n</section>\n")
+		return
+	}
+	b.WriteString("<ul>\n")
+	for _, ev := range rows {
+		line := ev.TS + " " + ev.Path
+		if ev.Tool != "" {
+			line += " tool=" + ev.Tool
+		}
+		if ev.Command != "" {
+			line += " command=" + ev.Command
+		}
+		if ev.Mode != "" {
+			line += " mode=" + ev.Mode
+		}
+		line += " prompt_known=" + strconv.FormatBool(ev.PromptKnown)
+		line += " vague_prompt=" + strconv.FormatBool(ev.VaguePrompt)
+		line += " disputed=" + strconv.FormatBool(ev.Disputed)
+		if ev.Reason != "" {
+			line += " " + ev.Reason
+		}
+		b.WriteString("<li>")
+		b.WriteString(html.EscapeString(line))
+		b.WriteString("</li>\n")
+	}
+	b.WriteString("</ul>\n</section>\n")
 }
 
 func writeLogOnly(b *strings.Builder, events []Event) {

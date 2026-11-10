@@ -27,6 +27,11 @@ type Event struct {
 	TokensRulesInjected    int      `json:"tokens_rules_injected"`
 	TokensFollowupEstimate int      `json:"tokens_followup_estimate"`
 	Reason                 string   `json:"reason,omitempty"`
+	Path                   string   `json:"path,omitempty"`
+	Command                string   `json:"command,omitempty"`
+	Tool                   string   `json:"tool,omitempty"`
+	PromptKnown            bool     `json:"prompt_known,omitempty"`
+	VaguePrompt            bool     `json:"vague_prompt,omitempty"`
 	Disputed               bool     `json:"disputed,omitempty"`
 	DisputedIDs            []string `json:"disputed_ids,omitempty"`
 	FalseAlarm             *bool    `json:"false_alarm,omitempty"`

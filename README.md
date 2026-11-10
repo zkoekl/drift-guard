@@ -56,11 +56,14 @@ A per-project hook file is already on for that project. The same rules file name
 ```json
 {
   "reply_language": "en",
+  "unrequested_delete": "ask",
   "test_command": "go test ./...",
   "test_path_globs": ["**/*.go"],
   "canary": { "files": ["AGENTS.md"] }
 }
 ```
+
+`unrequested_delete` is `ask`, `log`, or `off`. The default in an active session is `ask`. `ask` returns permission `ask` before a delete or replace the latest prompt did not request, and it does not deny the call. `log` records the event and allows the call. `off` skips the check. When the session never received the prompt text, the event is disputed. The field list is in [`docs/METRICS.md`](docs/METRICS.md).
 
 `DRIFT_GUARD_RULES` points at another path. An example with the optional lists is [`docs/semantic/rules.example.json`](docs/semantic/rules.example.json).
 
@@ -90,6 +93,8 @@ Semantic checks are weak. On a private case set, checks 2–4 together caught 3 
 The canary can be forged by reading `.drift-guard/canary-secret` and recomputing the code. Each session rewrites `drift-guard-canary:` in the configured files, and those files are often tracked. A matching code means the file was in context, not that its rules were applied. See [`docs/canary/README.md`](docs/canary/README.md).
 
 Push deny is not fail-closed in the global install. The global `hooks.json` does not set `failClosed`, so a dead or slow hook does not block `git push`. The per-project snippet does set `failClosed`. Whether a killed binary still blocks the push was not verified in Cursor.
+
+The unrequested-delete check does not expand globs, variables, or command substitution, and it does not read `find -delete`, `xargs rm`, or deletes inside another program. A `Write` that replaces a file with non-empty contents is not treated as a delete. A destructive verb in the latest prompt marks every delete in that call as requested. The forms that are skipped are listed in [`docs/METRICS.md`](docs/METRICS.md).
 
 ## More
 

@@ -40,6 +40,7 @@ Clear conversation heuristics start **log-only**. They may send `followup_messag
 Cursor (checked 2026-11-09, [docs](https://cursor.com/docs/agent/hooks)):
 
 - `beforeShellExecution` and `preToolUse`: deny. `git push` is denied here, with `failClosed: true`, so a crash does not let the push through. The global opt-in kit (`docs/install/global/`) does not set `failClosed`. A dead hook there does not block the push. The per-project snippet does.
+- `beforeShellExecution` and `preToolUse`: an unrequested delete or replace returns permission `ask` (not deny) when the session is active. `drift-guard.rules.json` field `unrequested_delete` is `ask` (default), `log`, or `off`. The event kind is `unrequested-delete`. Paths in temp directories and in `bin/`, `dist/`, `node_modules/`, and `.git/` are ignored. If the prompt text was not stored, the finding is disputed. No model.
 - `postToolUse`: append the command, exit code, and a short output excerpt to `events.jsonl`. May return a short `additional_context`. Do not store `user_email` or file bodies.
 - `afterAgentResponse`: conversation checks. Log-only until promoted.
 - `stop`: on a clear code violation, return `followup_message` and exit 0. The wrapper's own exit is 0 even when the check exits 1. Cursor uses exit 2 as a block on permission hooks; do not use it for a drift finding. Set `loop_limit` to 3 (the product default is 5). The wrapper sends at most two follow-ups, then only logs.

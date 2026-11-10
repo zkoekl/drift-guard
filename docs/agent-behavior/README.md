@@ -59,3 +59,5 @@ The parser is `internal/drift/semantic.go`. Names are case-insensitive. A value 
 | `check-ambiguity` | On demand | An unstated choice, a second method, or a named action that was not the one asked | `drift-guard scope` only when the other action is a path outside scope. No check sees an unstated voice, encoding, or remote name. |
 
 Acting before a confirmation is not one of the thirteen always-on lines. The ambiguity skill carries it because the moment to catch it is before the first irreversible step.
+
+`unrequested-delete` is a separate hook check, not one of those thirteen lines. In an active session, `beforeShellExecution` and `preToolUse` return permission `ask` when a delete or replace was not in the latest prompt. The rules field is `unrequested_delete` (`ask`, `log`, or `off`; default `ask`). The event is in `events.jsonl` and in the report. Prompt text is not copied into the log. See [`docs/METRICS.md`](../METRICS.md).
