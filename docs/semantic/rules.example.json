@@ -1,5 +1,6 @@
 {
   "reply_language": "ru",
+  "unrequested_delete": "ask",
   "test_command": "pytest",
   "test_path_globs": ["**/*.py"],
   "markers": {

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Unrequested-delete check on `beforeShellExecution` and `preToolUse` in an active session. Deleting or replacing a file the latest prompt did not ask for returns permission `ask` (not deny) and appends an `unrequested-delete` event. `unrequested_delete` in `drift-guard.rules.json` is `ask` (default), `log`, or `off`. A destructive verb covers only the files that prompt names. With no file named, the tool is allowed and the event is disputed. When the prompt text is unknown, the finding is disputed and the hook still asks. A vague prompt is recorded and the finding says to ask. Temp directories and `bin/`, `dist/`, `node_modules/`, and `.git/` are ignored. No model.
+
 ## [0.0.1-alpha] - 2026-11-10
 
 ### Added

@@ -5,9 +5,12 @@ Source: docs/agent-behavior/RULES.md
 Copies: docs/install/AGENTS.md, docs/install/CLAUDE.md,
         docs/install/.cursor/rules/drift-guard.mdc
 
-The check also enforces the Layer 0 cap from docs/PLAN.md on the source
-and on the Cursor rule file (front matter included): at most 80 lines and
-1500 estimated tokens, ceil(chars/4).
+The check also enforces the agent-file budget: at most 80 lines and
+1500 estimated tokens, ceil(chars/4). That is the small end of public
+files measured on 2026-11-10 (Claude Code CLAUDE.md 40 lines / 555
+tokens, Supabase AGENTS.md 77 lines / 1783 tokens). It covers
+docs/agent-behavior/RULES.md, the install copies, root AGENTS.md, and
+each skill under docs/install/skills.
 
     python3 scripts/agent_rules.py          # compare, exit 1 on drift
     python3 scripts/agent_rules.py --write  # regenerate the copies
@@ -28,7 +31,9 @@ MDC = INSTALL / ".cursor" / "rules" / "drift-guard.mdc"
 SKILLS = INSTALL / "skills"
 MAX_LINES = 80
 MAX_TOKENS = 1500
-MAX_SKILL_LINES = 500
+MAX_SKILL_LINES = 80
+MAX_SKILL_TOKENS = 1500
+ROOT_AGENTS = ROOT / "AGENTS.md"
 
 FRONT = """---
 description: Anti-drift behavior for coding agents. Apply on every turn.
@@ -88,9 +93,12 @@ def check_skills():
     names = []
     for path in found:
         text = path.read_text(encoding="utf-8")
-        lines = line_count(text)
-        if lines > MAX_SKILL_LINES:
-            sys.exit(f"{path.relative_to(ROOT)}: {lines} lines; cap is {MAX_SKILL_LINES}")
+        lines, est = check_budget(path.relative_to(ROOT).as_posix(), text)
+        if lines > MAX_SKILL_LINES or est > MAX_SKILL_TOKENS:
+            sys.exit(
+                f"{path.relative_to(ROOT)}: {lines} lines, {est} tokens; "
+                f"cap is {MAX_SKILL_LINES} lines and {MAX_SKILL_TOKENS} tokens"
+            )
         if not text.startswith("---\n"):
             sys.exit(f"{path.relative_to(ROOT)}: missing front matter")
         end = text.find("\n---\n", 4)
@@ -111,7 +119,11 @@ def check_skills():
 
 
 def check_pointer():
-    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    if not ROOT_AGENTS.is_file():
+        sys.exit("missing AGENTS.md")
+    agents = ROOT_AGENTS.read_text(encoding="utf-8")
+    lines, est = check_budget(ROOT_AGENTS.relative_to(ROOT).as_posix(), agents)
+    print(f"{ROOT_AGENTS.relative_to(ROOT)}: {lines} lines, {est} tokens")
     if "docs/agent-behavior/RULES.md" not in agents or "docs/install/" not in agents:
         sys.exit("root AGENTS.md must point at docs/agent-behavior/RULES.md and docs/install/")
 

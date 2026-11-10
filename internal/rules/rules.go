@@ -27,6 +27,12 @@ func IsGitPush(command string) bool {
 	return false
 }
 
+// Segments splits command on &&, ||, ;, |, and newlines, outside quotes.
+func Segments(command string) []string { return splitTop(command) }
+
+// Tokens splits one segment on whitespace, outside single and double quotes.
+func Tokens(segment string) []string { return tokenize(segment) }
+
 func splitTop(command string) []string {
 	var parts []string
 	var b strings.Builder

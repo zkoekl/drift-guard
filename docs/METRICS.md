@@ -43,6 +43,23 @@ Common fields: `ts` (RFC3339 UTC), `kind`, `session_id`.
 
 **judge** — not written by phases 0–2. A later optional phase may append `tokens_in`, `tokens_out`, and `calls`. Until that phase is enabled, the report's token chart is the follow-up estimate only, and it is zero when no follow-up was sent.
 
+**unrequested-delete** — one per path a `beforeShellExecution` or `preToolUse` hook would remove or replace without a request. Written only in an active session, and only when `unrequested_delete` is `ask` or `log` (the default is `ask`). The prompt text is not stored. Each hook delivery writes its own row.
+
+| Field | Meaning |
+| --- | --- |
+| `path` | File or directory the tool would delete or replace. |
+| `command` | Shell command, truncated. Omitted for a delete/edit tool call. |
+| `tool` | `rm`, `git rm`, `git mv`, `mv`, `unlink`, `redirect`, or the tool name (`Delete`, `Write`). |
+| `prompt_known` | True when this session received `beforeSubmitPrompt` or `UserPromptSubmit`. |
+| `vague_prompt` | True when the latest prompt matched the fixed vague-phrase list. |
+| `disputed` | True when the prompt text is unknown, or the latest prompt has a destructive verb and names no file. The no-file case is allowed (`mode` `log`). An unknown prompt still asks unless the rules mode is `log`. |
+| `mode` | `ask` or `log`. `ask` returns permission `ask`. It does not deny the call. |
+| `reason` | Short English note. Includes `vague request, should have asked` when `vague_prompt` is true. |
+
+The latest prompt decides. A delete is requested when that prompt names the file (basename or path) or names a directory the path is under (`src/pkg`). A destructive verb (`удали`, `убери`, `замени`, `перепиши`, `перенеси`, `delete`, `remove`, `replace`, `rewrite`, `migrate`, `rename`, and the inflections in the code) authorizes only those named paths. When the verb is present and the prompt names no file, the tool is allowed and the event is disputed. Vague phrases include `сделай что нужно`, `ты понял`, `заодно`, `как считаешь нужным`, `do whatever is needed`, and `you know what I mean`.
+
+The shell scan reuses the quote-aware split from `internal/rules`. It sees `rm`, `unlink`, `git rm`, `mv`, `git mv`, and a `>` that truncates an existing file. `>>` and `2>&1` do not count. `mv` flags the source, and the destination only when that path is an existing file. It does not see globs, variables, command substitution, backticks, `sudo`, `sh -c`, `find -delete`, `xargs rm`, `git clean`, `rmdir`, `truncate`, or deletes inside another program. A command longer than 8 KiB, or past 32 operands, is cut off. Cursor `Delete`, and `Write`/`Edit` with empty `contents`, count. A `Write` with other contents, and `StrReplace`, do not. Paths under `/tmp`, `/var/tmp`, `/private/tmp`, `os.TempDir()`, `/dev`, or a `bin`, `dist`, `node_modules`, or `.git` segment are ignored. A project that itself lives under `/tmp` is not ignored, except those segments.
+
 ## Definitions
 
 **Drift caught per session.** Number of `verdict` events with `violations > 0` in that `session_id`. Also shown as a daily sum (catches over time). A session id is the Cursor `conversation_id` when the hook has one, otherwise a CI run id, otherwise a random id the CLI created for that invocation.

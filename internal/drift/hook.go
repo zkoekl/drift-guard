@@ -65,10 +65,11 @@ func PathsFromEnv() Paths {
 }
 
 type ruleFile struct {
-	ReplyLanguage string   `json:"reply_language"`
-	TestCommand   string   `json:"test_command"`
-	TestPathGlobs []string `json:"test_path_globs"`
-	Markers       struct {
+	ReplyLanguage     string   `json:"reply_language"`
+	UnrequestedDelete string   `json:"unrequested_delete"`
+	TestCommand       string   `json:"test_command"`
+	TestPathGlobs     []string `json:"test_path_globs"`
+	Markers           struct {
 		Goal       []string `json:"goal"`
 		Source     []string `json:"source"`
 		Proof      []string `json:"proof"`
@@ -86,6 +87,9 @@ type sessionState struct {
 	AssistantText string          `json:"assistant_text"`
 	PrevAssistant string          `json:"prev_assistant,omitempty"`
 	UserText      string          `json:"user_text,omitempty"`
+	PromptSeen    bool            `json:"prompt_seen,omitempty"`
+	Vague         bool            `json:"vague,omitempty"`
+	Created       []string        `json:"created,omitempty"`
 	Pushback      bool            `json:"pushback,omitempty"`
 	Evidence      bool            `json:"evidence,omitempty"`
 	Anchors       []string        `json:"anchors,omitempty"`
@@ -165,10 +169,14 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 		transcript = &st
 	}
 	_ = writeDump(p, dumpLine{TS: stamp(now), Event: event, Payload: redacted, Transcript: transcript})
-	if event == "beforeSubmitPrompt" {
+	if isPromptEvent(event) {
 		notePrompt(&state, payload, semanticFromRules(ruleset))
 	}
 	observe(event, payload, &state, now)
+	var askMsg string
+	if isBefore(event) {
+		askMsg = guardUnrequestedDelete(event, payload, &state, ruleset, p, sid, now)
+	}
 	if err := saveState(p.State, sid, state); err != nil {
 		_ = err
 	}
@@ -193,6 +201,9 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 	}
 
 	if isBefore(event) {
+		if askMsg != "" {
+			return askJSON(event, askMsg), 0
+		}
 		return allowJSON(event), 0
 	}
 
@@ -314,6 +325,8 @@ func notePrompt(state *sessionState, payload map[string]any, cfg SemanticConfig)
 		state.PrevAssistant = state.AssistantText
 	}
 	state.UserText = truncateRunes(prompt, 2000)
+	state.PromptSeen = true
+	state.Vague = vaguePrompt(state.UserText)
 	state.Pushback = containsPhrase(prompt, cfg.Pushback)
 	state.Evidence = false
 	state.Anchors = mergeUnique(state.Anchors, ExtractAnchors(prompt))
@@ -612,6 +625,11 @@ func observe(event string, payload map[string]any, state *sessionState, now time
 				state.Reads = mergeUnique(state.Reads, []string{path})
 			}
 		}
+		if isWriteTool(stringField(payload, "tool_name")) {
+			if path := inputPath(payload); path != "" {
+				rememberCreated(state, path)
+			}
+		}
 		if path := toolPath(payload); path != "" {
 			state.Files = append(state.Files, fileNote{Path: path, At: now.UTC()})
 		}
@@ -619,6 +637,7 @@ func observe(event string, payload map[string]any, state *sessionState, now time
 		state.Evidence = true
 		if path := stringField(payload, "file_path"); path != "" {
 			state.Files = append(state.Files, fileNote{Path: path, At: now.UTC()})
+			rememberCreated(state, path)
 		}
 	}
 }

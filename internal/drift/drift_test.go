@@ -215,6 +215,7 @@ func TestReportHasFiveChartsAndNoURL(t *testing.T) {
 		"Tokens per session",
 		"Rule churn",
 		"Ambiguous",
+		"Unrequested deletes",
 	} {
 		if !strings.Contains(page, title) {
 			t.Errorf("missing %q", title)

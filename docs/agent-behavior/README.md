@@ -59,3 +59,5 @@ The parser is `internal/drift/semantic.go`. Names are case-insensitive. A value 
 | `check-ambiguity` | On demand | An unstated choice, a second method, or a named action that was not the one asked | `drift-guard scope` only when the other action is a path outside scope. No check sees an unstated voice, encoding, or remote name. |
 
 Acting before a confirmation is not one of the thirteen always-on lines. The ambiguity skill carries it because the moment to catch it is before the first irreversible step.
+
+`unrequested-delete` is a separate hook check. It asks before a delete the latest prompt did not name. A destructive verb covers only those named paths. See [`docs/METRICS.md`](../METRICS.md).
