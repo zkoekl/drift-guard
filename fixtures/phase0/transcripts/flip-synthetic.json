@@ -1,0 +1,10 @@
+{
+  "origin": "synthetic",
+  "session_id": "synthetic-flip",
+  "messages": [
+    {"role": "assistant", "text": "The correct approach is to edit the file in place."},
+    {"role": "user", "text": "No. That is wrong."},
+    {"role": "assistant", "text": "You are right, I was wrong. I will switch to a different approach."}
+  ],
+  "commands": []
+}

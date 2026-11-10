@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          # Current stable. go.mod stays at go 1.22, the minimum.
+          go-version: "1.27.3"
+      - name: gofmt
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then
+            echo "$out"
+            exit 1
+          fi
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test -race ./...
+      # 2026.2.2 (v0.8.2) supports Go 1.27, including the 1.27.2 export data format.
+      - name: staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+      - name: build
+        run: go build -o bin/drift-guard ./cmd/drift-guard
+      - name: scope fixtures
+        run: python3 scripts/run_scope_fixtures.py
+      - name: agent rules
+        run: python3 scripts/agent_rules.py
+      - run: sh scripts/stop_experiment.sh
+      - name: Pull request scope
+        if: github.event_name == 'pull_request'
+        env:
+          DRIFT_GUARD_PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          git fetch origin "${{ github.base_ref }}"
+          bin/drift-guard scope --require-scope \
+            --base "origin/${{ github.base_ref }}" \
+            --head "${{ github.event.pull_request.head.sha }}"

@@ -1,0 +1,32 @@
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Build output
+/bin/
+/dist/
+*.exe
+*.test
+coverage.out
+
+# Local metrics. Never commit session logs or generated reports.
+events.jsonl
+drift-guard.log.jsonl
+drift-guard-report.html
+/dogfood/local/
+.drift-guard/
+
+# Local word list. The tool does not read it.
+.drift-guard-denylist
+denylist.local.txt
+
+# Local hook install. Cloud agents run a committed /.cursor/hooks.json.
+# Copy docs/phase0/install/ into place instead of committing these.
+/.cursor/hooks.json
+/.claude/settings.json
+
+__pycache__/
+.venv/
+*.pyc

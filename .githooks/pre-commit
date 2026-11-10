@@ -1,0 +1,16 @@
+#!/bin/sh
+# Flags staged paths that match none of the declared scope globs.
+# No scope file: warn and exit 0. CI passes --require-scope.
+set -eu
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -z "$files" ]; then
+  exit 0
+fi
+bin="$root/bin/drift-guard"
+if [ ! -x "$bin" ]; then
+  echo "drift-guard: bin/drift-guard is not built; scope check skipped" >&2
+  exit 0
+fi
+printf '%s\n' "$files" | "$bin" scope --files -

@@ -1,0 +1,35 @@
+name: Feature
+description: A change to the checker, the report, or the docs
+title: "feat: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      options:
+        - "0 prototype"
+        - "1 deterministic check and local report"
+        - "2 rules and evidence-required claims"
+        - "3 optional judge"
+        - "not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: textarea
+    id: not
+    attributes:
+      label: What this should not do
+      description: Include token cost. Default is zero model tokens.
+    validations:
+      required: true

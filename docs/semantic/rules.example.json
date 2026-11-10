@@ -1,0 +1,26 @@
+{
+  "reply_language": "ru",
+  "test_command": "pytest",
+  "test_path_globs": ["**/*.py"],
+  "markers": {
+    "goal": ["ЦЕЛЬ", "GOAL"],
+    "source": ["ИСТОЧНИК", "SOURCE"],
+    "proof": ["ДОКАЗАНО", "PROOF"],
+    "assumption": ["ДОПУЩЕНИЕ", "ASSUMPTION"]
+  },
+  "anchor_min_shared": 1,
+  "pushback_phrases": [
+    "ты не прав",
+    "а разве",
+    "you're wrong",
+    "are you sure"
+  ],
+  "agreement_phrases": [
+    "вы правы",
+    "you're absolutely right",
+    "you are right"
+  ],
+  "canary": {
+    "files": ["AGENTS.md", "skills/example/SKILL.md"]
+  }
+}

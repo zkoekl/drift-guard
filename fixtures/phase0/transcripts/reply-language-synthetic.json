@@ -1,0 +1,11 @@
+{
+  "origin": "synthetic",
+  "session_id": "synthetic-reply-language",
+  "reply_language": "ru",
+  "assistant_text": "This report covers three numbered rounds. Each round is written in English and describes the series.",
+  "messages": [
+    {"role": "user", "text": "Write the report in Russian."},
+    {"role": "assistant", "text": "This report covers three numbered rounds. Each round is written in English and describes the series."}
+  ],
+  "commands": []
+}

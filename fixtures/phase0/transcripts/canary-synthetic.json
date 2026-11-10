@@ -1,0 +1,13 @@
+{
+  "origin": "synthetic",
+  "session_id": "canary-fixture",
+  "canary_files": ["AGENTS.md", "skills/example/SKILL.md"],
+  "canary_secret": "fixture-secret",
+  "reads": ["AGENTS.md"],
+  "assistant_text": "ПРОЧИТАНО: AGENTS.md 9c68b232\nREAD: skills/example/SKILL.md dfbce2b7\n",
+  "messages": [
+    {"role": "user", "text": "Confirm the rule files are loaded."},
+    {"role": "tool", "text": "", "tool_calls": ["Read"], "reads": ["AGENTS.md"]},
+    {"role": "assistant", "text": "ПРОЧИТАНО: AGENTS.md 9c68b232\nREAD: skills/example/SKILL.md dfbce2b7\n"}
+  ]
+}

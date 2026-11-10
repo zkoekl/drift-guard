@@ -1,0 +1,82 @@
+[
+  {
+    "name": "status is not a push and the named test never ran",
+    "command": "git status",
+    "test_command": "pytest",
+    "globs": ["**/*.py"],
+    "changed_paths": ["src/learn.py"],
+    "commands": [{"command": "git diff --stat", "exit_code": 0}],
+    "want_push": false,
+    "want_done": true
+  },
+  {
+    "name": "plain git push",
+    "command": "git push",
+    "test_command": "pytest",
+    "globs": ["**/*.py"],
+    "changed_paths": ["src/learn.py"],
+    "commands": [],
+    "want_push": true,
+    "want_done": true
+  },
+  {
+    "name": "push after another command",
+    "command": "git status && git push origin main",
+    "test_command": "pytest",
+    "globs": ["**/*.py"],
+    "changed_paths": ["src/learn.py"],
+    "commands": [{"command": "pytest -q", "exit_code": 0}],
+    "want_push": true,
+    "want_done": false
+  },
+  {
+    "name": "echo does not push",
+    "command": "echo \"git push\"",
+    "test_command": "pytest",
+    "globs": ["**/*.py"],
+    "changed_paths": ["src/learn.py"],
+    "commands": [{"command": "pytest -q", "exit_code": 1}],
+    "want_push": false,
+    "want_done": true
+  },
+  {
+    "name": "git -C push",
+    "command": "git -C /tmp/repo push",
+    "test_command": "",
+    "globs": [],
+    "changed_paths": ["src/learn.py"],
+    "commands": [],
+    "want_push": true,
+    "want_done": false
+  },
+  {
+    "name": "shell -c push",
+    "command": "bash -lc 'git push'",
+    "test_command": "go test",
+    "globs": ["**/*.go"],
+    "changed_paths": ["cmd/main.go"],
+    "commands": [{"command": "go test ./...", "exit_code": 0}],
+    "want_push": true,
+    "want_done": false
+  },
+  {
+    "name": "commit message mentions push",
+    "command": "git commit -m 'please git push later'",
+    "test_command": "pytest",
+    "globs": ["gameplay/**"],
+    "changed_paths": [".github/workflows/build.yml"],
+    "commands": [],
+    "want_push": false,
+    "want_done": false
+  },
+  {
+    "name": "no changed path",
+    "command": "git status",
+    "test_command": "pytest",
+    "globs": ["**/*.py"],
+    "changed_paths": [],
+    "commands": [],
+    "want_push": false,
+    "want_done": false
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "origin": "synthetic",
+  "session_id": "synthetic-restart-claim",
+  "assistant_text": "The process was restarted.",
+  "messages": [
+    {"role": "user", "text": "Restart the process."},
+    {"role": "assistant", "text": "The process was restarted."}
+  ],
+  "commands": [{"command": "restart-service", "exit_code": 0}]
+}

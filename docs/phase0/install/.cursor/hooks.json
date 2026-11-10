@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "drift-guard hook",
+        "timeout": 10
+      },
+      {
+        "command": "drift-guard hook",
+        "timeout": 10,
+        "failClosed": true,
+        "matcher": "\\bgit(\\s+\\S+){0,4}\\s+push\\b"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "drift-guard hook",
+        "timeout": 10,
+        "failClosed": true,
+        "matcher": "Shell"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "drift-guard hook",
+        "timeout": 10
+      }
+    ],
+    "sessionStart": [
+      {
+        "command": "drift-guard hook",
+        "timeout": 10
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "drift-guard hook",
+        "timeout": 10
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "drift-guard hook",
+        "timeout": 10
+      }
+    ],
+    "stop": [
+      {
+        "command": "drift-guard hook",
+        "timeout": 10,
+        "loop_limit": 3
+      }
+    ]
+  }
+}
