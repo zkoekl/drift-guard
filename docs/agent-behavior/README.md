@@ -60,4 +60,4 @@ The parser is `internal/drift/semantic.go`. Names are case-insensitive. A value 
 
 Acting before a confirmation is not one of the thirteen always-on lines. The ambiguity skill carries it because the moment to catch it is before the first irreversible step.
 
-`unrequested-delete` is a separate hook check, not one of those thirteen lines. In an active session, `beforeShellExecution` and `preToolUse` return permission `ask` when a delete or replace was not in the latest prompt. The rules field is `unrequested_delete` (`ask`, `log`, or `off`; default `ask`). The event is in `events.jsonl` and in the report. Prompt text is not copied into the log. See [`docs/METRICS.md`](../METRICS.md).
+`unrequested-delete` is a separate hook check. It asks before a delete the latest prompt did not name. A destructive verb covers only those named paths. See [`docs/METRICS.md`](../METRICS.md).

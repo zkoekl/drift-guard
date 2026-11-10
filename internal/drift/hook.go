@@ -90,7 +90,6 @@ type sessionState struct {
 	PromptSeen    bool            `json:"prompt_seen,omitempty"`
 	Vague         bool            `json:"vague,omitempty"`
 	Created       []string        `json:"created,omitempty"`
-	DeleteSeen    []deleteSeen    `json:"delete_seen,omitempty"`
 	Pushback      bool            `json:"pushback,omitempty"`
 	Evidence      bool            `json:"evidence,omitempty"`
 	Anchors       []string        `json:"anchors,omitempty"`

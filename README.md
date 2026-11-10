@@ -94,7 +94,7 @@ The canary can be forged by reading `.drift-guard/canary-secret` and recomputing
 
 Push deny is not fail-closed in the global install. The global `hooks.json` does not set `failClosed`, so a dead or slow hook does not block `git push`. The per-project snippet does set `failClosed`. Whether a killed binary still blocks the push was not verified in Cursor.
 
-The unrequested-delete check does not expand globs, variables, or command substitution, and it does not read `find -delete`, `xargs rm`, or deletes inside another program. A `Write` that replaces a file with non-empty contents is not treated as a delete. A destructive verb in the latest prompt marks every delete in that call as requested. The forms that are skipped are listed in [`docs/METRICS.md`](docs/METRICS.md).
+The unrequested-delete check reads `rm`, `unlink`, `git rm`, `mv`, and `>` truncation. It skips globs, variables, `sudo`, `sh -c`, and deletes inside another program. A destructive verb allows only the files the latest prompt names. With no file named, the tool is allowed and the event is disputed. The skipped forms are listed in [`docs/METRICS.md`](docs/METRICS.md).
 
 ## More
 
