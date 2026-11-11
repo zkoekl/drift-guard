@@ -7,25 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-alpha] - 2026-11-12
+
 ### Added
 
 - A `v*` tag starts a CI release that attaches Linux and macOS (amd64, arm64) and Windows amd64 archives, plus `checksums.txt`. The tag is written into `drift-guard --version`.
-
 - `drift-guard report --summary` prints a short count-only text summary of the event log (period, counts by kind and check, action counts, session count) and writes no HTML. Paths, commands, prompts, file names, and session ids are omitted so the text can be pasted from a machine that must not leak them.
-
 - PostToolUse now reads Claude Code's `tool_response`. For Bash the documented shape is `stdout`, `stderr`, `interrupted`, and `isImage` (https://code.claude.com/docs/en/hooks). A finished, non-interrupted command counts as exit 0, so a passing test run is no longer missed. `tool_output` and `output`, including `exitCode`, still work.
 - Canary lines are also refreshed on the first tool hook of a session when `sessionStart` or `beforeSubmitPrompt` did not run, as with Cursor cloud agents. A stop hook does not ask the agent to quote `pending`.
 - In a Cursor cloud agent, an unrequested delete that would have returned permission `ask` is denied instead, because that environment has no user to answer the prompt. Detection uses `CURSOR_AGENT_WORKER_ID` or `CURSOR_WORKER_POOL_NAME`. The local CLI's `CURSOR_AGENT` does not match.
-
 - `CONNECT.md` is the single procedure for an agent asked to connect a repo. It installs the binary, the strongest hook that environment runs, and the advisory rules, then asks for a table of enforced and advisory checks. This repo commits that project hook, a root `CLAUDE.md`, `.cursor/rules/drift-guard.mdc`, and `drift-guard.rules.json`. `docs/install/skills/advisory-scan/SKILL.md` is the Grok Bot skill. It is advisory. Grok Bot has no hooks.
 - A normal push of the current feature branch is allowed. A push to main, master, or the default branch, a force push, or a tag push is denied. The dogfood canary file is `.drift-guard/canary.md`, which is gitignored, so a refresh does not rewrite `AGENTS.md`.
-
 - Unrequested-delete check on `beforeShellExecution` and `preToolUse` in an active session. Deleting or replacing a file the latest prompt did not ask for returns permission `ask` (not deny), except in a Cursor cloud agent, where `ask` is denied, and appends an `unrequested-delete` event. `unrequested_delete` in `drift-guard.rules.json` is `ask` (default), `log`, or `off`. A destructive verb covers only the files that prompt names. With no file named, the tool is allowed and the event is disputed. When the prompt text is unknown, the finding is disputed and the hook still asks. A vague prompt is recorded and the finding says to ask. Temp directories and `bin/`, `dist/`, `node_modules/`, and `.git/` are ignored. No model.
-
-## [0.0.1-alpha] - 2026-11-10
-
-### Added
-
 - `drift-guard` commands: `hook`, `check`, `scan`, `report`, `scope`, and `canary refresh`. One binary, no daemon, no model, and no telemetry. `drift-guard --version` and `drift-guard -v` print `main.version` (default `dev`, set with `-ldflags "-X main.version=..."`).
 - Module path `github.com/zkoekl/drift-guard`. Install with `go install github.com/zkoekl/drift-guard/cmd/drift-guard@latest`.
 - Opt-in global Cursor hooks under `docs/install/global/`. Until a session is turned on, the hook allows the command and does not deny `git push`.
