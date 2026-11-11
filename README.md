@@ -3,7 +3,7 @@
 [![CI](https://github.com/zkoekl/drift-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/zkoekl/drift-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/zkoekl/drift-guard/blob/main/LICENSE)
 
-Tested on 51 drift cases taken from real agent conversations and in live `cursor-agent` sessions.
+Tested with scripted agent sessions and live Cursor CLI and cloud-agent sessions. Early project: expect changes.
 
 If you are an AI agent asked to connect a repo, follow [CONNECT.md](CONNECT.md).
 
