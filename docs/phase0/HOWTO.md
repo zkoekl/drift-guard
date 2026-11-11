@@ -12,11 +12,11 @@ export PATH="$HOME/.local/bin:$PATH"
 Check, before installing hooks:
 
 ```sh
-printf '%s' '{"hook_event_name":"beforeShellExecution","command":"git status"}' | drift-guard hook
-printf '%s' '{"hook_event_name":"beforeShellExecution","command":"git push"}' | drift-guard hook
+printf '%s' '{"hook_event_name":"beforeShellExecution","command":"git push -u origin HEAD"}' | drift-guard hook
+printf '%s' '{"hook_event_name":"beforeShellExecution","command":"git push origin HEAD:main"}' | drift-guard hook
 ```
 
-The first command prints `"permission":"allow"`. The second prints `"permission":"deny"`.
+On a feature branch, the first prints `"permission":"allow"` and the second prints `"permission":"deny"`. On main, or when the branch cannot be read, both deny.
 
 If Cursor cannot find `drift-guard`, replace `drift-guard hook` in the snippet with an absolute path.
 
@@ -68,7 +68,7 @@ On `stop`, the dump has a `transcript` object:
 
 ## git push
 
-`beforeShellExecution` and `preToolUse`/`PreToolUse` for a shell do not let the command run when it is `git push` (including after `&&` and inside `sh -c`). `echo "git push"` is not blocked. Killing the binary and checking that the push still does not run can only be done in Cursor or Claude: a crash triggers `failClosed` / `onFailure: block`. That is **not verified** here.
+`beforeShellExecution` and `preToolUse`/`PreToolUse` for a shell do not let the command run when it pushes main, master, the default branch, a tag, or uses `--force` (including after `&&` and inside `sh -c`). A normal push of the current feature branch is allowed. `echo "git push"` is not blocked. Killing the binary and checking that the push still does not run can only be done in Cursor or Claude: a crash triggers `failClosed` / `onFailure: block`. That is **not verified** here.
 
 ## Does the agent continue after stop
 

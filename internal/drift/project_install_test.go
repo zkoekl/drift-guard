@@ -104,7 +104,7 @@ func TestDogfoodProjectInstall(t *testing.T) {
 	if err := json.Unmarshal(rulesRaw, &rules); err != nil {
 		t.Fatal(err)
 	}
-	if rules.TestCommand != "go test ./..." || len(rules.Canary.Files) != 1 || rules.Canary.Files[0] != "AGENTS.md" {
+	if rules.TestCommand != "go test ./..." || len(rules.Canary.Files) != 1 || rules.Canary.Files[0] != ".drift-guard/canary.md" {
 		t.Fatalf("rules: %#v", rules)
 	}
 
@@ -112,19 +112,30 @@ func TestDogfoodProjectInstall(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// A binary left from an older build would still deny every push.
+	_ = os.Remove(filepath.Join(root, ".drift-guard", "bin", "drift-guard"))
 	dir := t.TempDir()
+	feature := t.TempDir()
+	initFeatureRepo(t, feature)
 	run := func(payload string) map[string]any {
 		t.Helper()
 		c := exec.Command(script)
 		c.Dir = root
 		c.Stdin = strings.NewReader(payload)
-		c.Env = append(os.Environ(),
+		env := make([]string, 0, len(os.Environ())+6)
+		for _, e := range os.Environ() {
+			if strings.HasPrefix(e, "PATH=") {
+				continue
+			}
+			env = append(env, e)
+		}
+		c.Env = append(env,
 			"PATH="+filepath.Dir(goBin)+":/usr/bin:/bin",
 			"DRIFT_GUARD_LOG="+filepath.Join(dir, "events.jsonl"),
 			"DRIFT_GUARD_STATE="+filepath.Join(dir, "state"),
 			"DRIFT_GUARD_DUMP="+filepath.Join(dir, "dump.jsonl"),
 			"DRIFT_GUARD_RULES="+filepath.Join(dir, "none.json"),
-			"DRIFT_GUARD_ROOT="+root,
+			"DRIFT_GUARD_ROOT="+feature,
 		)
 		out, err := c.Output()
 		if err != nil {
@@ -136,13 +147,19 @@ func TestDogfoodProjectInstall(t *testing.T) {
 		}
 		return got
 	}
-	allow := run(`{"hook_event_name":"beforeShellExecution","command":"git status"}`)
+	allow := run(`{"hook_event_name":"beforeShellExecution","command":"git push -u origin HEAD"}`)
 	if allow["permission"] != "allow" {
-		t.Fatalf("status: %#v", allow)
+		t.Fatalf("feature push: %#v", allow)
 	}
-	deny := run(`{"hook_event_name":"beforeShellExecution","command":"git push"}`)
-	if deny["permission"] != "deny" {
-		t.Fatalf("push: %#v", deny)
+	for _, cmd := range []string{
+		"git push origin HEAD:main",
+		"git push --force -u origin HEAD",
+		"git push origin --tags",
+	} {
+		denied := run(`{"hook_event_name":"beforeShellExecution","command":` + jsonString(cmd) + `}`)
+		if denied["permission"] != "deny" {
+			t.Fatalf("%s: %#v", cmd, denied)
+		}
 	}
 }
 

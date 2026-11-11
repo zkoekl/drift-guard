@@ -68,9 +68,9 @@ Paths are project-relative. A path that escapes the root is skipped. An empty li
 drift-guard-canary: pending
 ```
 
-Refresh replaces that token for the session. Do not commit the session code. This tool does not restore `pending` and does not block `git commit` of the rewritten line. `git push` stays denied by the existing hook.
+Refresh replaces that token for the session. Do not commit the session code. This tool does not restore `pending` and does not block `git commit` of the rewritten line. A protected `git push` stays denied by the existing hook.
 
-The example field list is `docs/semantic/rules.example.json`. The install snippets are `docs/phase0/install/.cursor/hooks.json` and `docs/phase0/install/.claude/settings.json`. This repo commits `.cursor/hooks.json` for dogfood. Do not commit a session canary code over `pending`.
+The example field list is `docs/semantic/rules.example.json`. The install snippets are `docs/phase0/install/.cursor/hooks.json` and `docs/phase0/install/.claude/settings.json`. This repo commits `.cursor/hooks.json` for dogfood. Its configured canary file is `.drift-guard/canary.md`, which is gitignored, so a refresh does not rewrite `AGENTS.md`. Do not commit a session canary code over `pending`.
 
 ## Limits
 

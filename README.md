@@ -41,10 +41,10 @@ Rule text for other projects, separate from the hooks, is [`docs/install/README.
 ## Example
 
 ```sh
-echo '{"hook_event_name":"beforeShellExecution","command":"git push"}' | drift-guard hook
+echo '{"hook_event_name":"beforeShellExecution","command":"git push origin HEAD:main"}' | drift-guard hook
 ```
 
-The hook prints `"permission":"deny"`.
+The hook prints `"permission":"deny"`. A normal `git push -u origin HEAD` from a feature branch is allowed. A push to main, master, or the default branch, a force push, and a tag push are denied.
 
 ## Turn the checks on
 

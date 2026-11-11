@@ -4,6 +4,6 @@
   "test_command": "go test ./...",
   "test_path_globs": ["**/*.go"],
   "canary": {
-    "files": ["AGENTS.md"]
+    "files": [".drift-guard/canary.md"]
   }
 }
