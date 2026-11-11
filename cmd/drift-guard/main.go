@@ -57,7 +57,7 @@ func usage() {
   drift-guard check --input file.json [--log events.jsonl]
   drift-guard scan [--log events.jsonl] <transcript>
   drift-guard scan <transcript> [--log events.jsonl]
-  drift-guard report [--log events.jsonl] [--output file.html] [--no-open]
+  drift-guard report [--log events.jsonl] [--output file.html] [--no-open] [--summary]
   drift-guard scope [--require-scope] [--scope-file f] [--files f|-] [--staged]
                     [--base ref --head ref]
   drift-guard canary refresh --session ID [--rules f] [--root dir]
@@ -185,6 +185,7 @@ func cmdReport(args []string) int {
 	logPath := fs.String("log", "events.jsonl", "events.jsonl path")
 	output := fs.String("output", "drift-guard-report.html", "html path")
 	noOpen := fs.Bool("no-open", false, "do not open a browser")
+	summary := fs.Bool("summary", false, "print a path-free text summary")
 	if err := fs.Parse(args); err != nil {
 		usage()
 		return 2
@@ -193,6 +194,10 @@ func cmdReport(args []string) int {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
+	}
+	if *summary {
+		fmt.Print(drift.ReportSummary(events))
+		return 0
 	}
 	page := drift.ReportHTML(events)
 	if err := os.WriteFile(*output, []byte(page), 0o644); err != nil {

@@ -30,6 +30,110 @@ func ReportHTML(events []Event) string {
 	return b.String()
 }
 
+// ReportSummary is a short plain-text count of the log. It includes the
+// period, event counts by kind and check, action counts, and the session
+// count. It omits paths, commands, prompts, file names, and session ids so
+// the text can be pasted from a machine that must not leak those values.
+func ReportSummary(events []Event) string {
+	var first, last string
+	kinds := map[string]int{}
+	checks := map[string]int{}
+	sessions := map[string]struct{}{}
+	blocked, deny, ask, log, disputed := 0, 0, 0, 0, 0
+	for _, ev := range events {
+		if ev.TS != "" {
+			if first == "" || ev.TS < first {
+				first = ev.TS
+			}
+			if last == "" || ev.TS > last {
+				last = ev.TS
+			}
+		}
+		if ev.Kind != "" {
+			kinds[ev.Kind]++
+		}
+		for _, id := range ev.RuleIDs {
+			if id != "" {
+				checks[id]++
+			}
+		}
+		if ev.SessionID != "" {
+			sessions[ev.SessionID] = struct{}{}
+		}
+		switch ev.Mode {
+		case "block":
+			blocked++
+		case "deny":
+			deny++
+		case "ask":
+			ask++
+		case "log":
+			log++
+		}
+		if ev.Disputed {
+			disputed++
+		}
+	}
+
+	var b strings.Builder
+	b.WriteString("drift-guard summary\n")
+	b.WriteString("Period: ")
+	if first == "" {
+		b.WriteString("none")
+	} else {
+		b.WriteString(first)
+		b.WriteString(" .. ")
+		b.WriteString(last)
+	}
+	b.WriteString("\n")
+	b.WriteString("Events: ")
+	b.WriteString(strconv.Itoa(len(events)))
+	b.WriteString("\n")
+	b.WriteString("Sessions: ")
+	b.WriteString(strconv.Itoa(len(sessions)))
+	b.WriteString("\n")
+	writeCountBlock(&b, "By kind", kinds)
+	writeCountBlock(&b, "By check", checks)
+	b.WriteString("By action:\n")
+	b.WriteString("  blocked  ")
+	b.WriteString(strconv.Itoa(blocked))
+	b.WriteString("\n")
+	b.WriteString("  deny  ")
+	b.WriteString(strconv.Itoa(deny))
+	b.WriteString("\n")
+	b.WriteString("  ask  ")
+	b.WriteString(strconv.Itoa(ask))
+	b.WriteString("\n")
+	b.WriteString("  log  ")
+	b.WriteString(strconv.Itoa(log))
+	b.WriteString("\n")
+	b.WriteString("  disputed  ")
+	b.WriteString(strconv.Itoa(disputed))
+	b.WriteString("\n")
+	return b.String()
+}
+
+func writeCountBlock(b *strings.Builder, title string, counts map[string]int) {
+	b.WriteString(title)
+	if len(counts) == 0 {
+		b.WriteString(": none\n")
+		return
+	}
+	b.WriteString(":\n")
+	keys := make([]string, 0, len(counts))
+	for k := range counts {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		b.WriteString("  ")
+		b.WriteString(k)
+		b.WriteString("  ")
+		b.WriteString(strconv.Itoa(counts[k]))
+		b.WriteString("\n")
+	}
+}
+
 const reportCSS = `
 body { font: 15px/1.4 sans-serif; margin: 2rem; color: #1a1a1a; background: #fff; }
 h1 { font-size: 1.4rem; }

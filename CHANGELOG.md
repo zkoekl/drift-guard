@@ -9,8 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `drift-guard report --summary` prints a short count-only text summary of the event log (period, counts by kind and check, action counts, session count) and writes no HTML. Paths, commands, prompts, file names, and session ids are omitted so the text can be pasted from a machine that must not leak them.
+
+- PostToolUse now reads Claude Code's `tool_response`. For Bash the documented shape is `stdout`, `stderr`, `interrupted`, and `isImage` (https://code.claude.com/docs/en/hooks). A finished, non-interrupted command counts as exit 0, so a passing test run is no longer missed. `tool_output` and `output`, including `exitCode`, still work.
 - Canary lines are also refreshed on the first tool hook of a session when `sessionStart` or `beforeSubmitPrompt` did not run, as with Cursor cloud agents. A stop hook does not ask the agent to quote `pending`.
 - In a Cursor cloud agent, an unrequested delete that would have returned permission `ask` is denied instead, because that environment has no user to answer the prompt. Detection uses `CURSOR_AGENT_WORKER_ID` or `CURSOR_WORKER_POOL_NAME`. The local CLI's `CURSOR_AGENT` does not match.
+
 - `CONNECT.md` is the single procedure for an agent asked to connect a repo. It installs the binary, the strongest hook that environment runs, and the advisory rules, then asks for a table of enforced and advisory checks. This repo commits that project hook, a root `CLAUDE.md`, `.cursor/rules/drift-guard.mdc`, and `drift-guard.rules.json`. `docs/install/skills/advisory-scan/SKILL.md` is the Grok Bot skill. It is advisory. Grok Bot has no hooks.
 - A normal push of the current feature branch is allowed. A push to main, master, or the default branch, a force push, or a tag push is denied. The dogfood canary file is `.drift-guard/canary.md`, which is gitignored, so a refresh does not rewrite `AGENTS.md`.
 
