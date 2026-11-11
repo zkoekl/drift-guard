@@ -542,6 +542,10 @@ func TestFollowupLanguage(t *testing.T) {
 	if err := os.WriteFile(p.Rules, []byte(`{"reply_language":"ru","canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(p.Root, "AGENTS.md"), []byte("drift-guard-canary: pending\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	mustHandle(t, p, `{"hook_event_name":"sessionStart","conversation_id":"can-ru"}`)
 	canaryMsg := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"can-ru","text":`+jsonString(marked)+`}`)
 	msg, _ = canaryMsg["followup_message"].(string)
 	if !strings.Contains(msg, "перечитайте") || !strings.Contains(msg, "AGENTS.md") || strings.Contains(msg, "reread") {
@@ -593,6 +597,7 @@ func TestFollowupLanguage(t *testing.T) {
 	if err := os.WriteFile(p.Rules, rules, 0o644); err != nil {
 		t.Fatal(err)
 	}
+	mustHandle(t, p, `{"hook_event_name":"sessionStart","conversation_id":"cap-ru"}`)
 	capped := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"cap-ru","text":"short","changed_paths":["a.py"]}`)
 	msg, _ = capped["followup_message"].(string)
 	if msg == "" || len(msg) > 500 || !utf8.ValidString(msg) {

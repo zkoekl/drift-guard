@@ -53,7 +53,7 @@ Common fields: `ts` (RFC3339 UTC), `kind`, `session_id`.
 | `prompt_known` | True when this session received `beforeSubmitPrompt` or `UserPromptSubmit`. |
 | `vague_prompt` | True when the latest prompt matched the fixed vague-phrase list. |
 | `disputed` | True when the prompt text is unknown, or the latest prompt has a destructive verb and names no file. The no-file case is allowed (`mode` `log`). An unknown prompt still asks unless the rules mode is `log`. |
-| `mode` | `ask` or `log`. `ask` returns permission `ask`. It does not deny the call. |
+| `mode` | `ask`, `log`, or `deny`. `ask` returns permission `ask` and does not deny the call, except in a Cursor cloud agent, where `ask` is not honored: the hook returns `deny` and `mode` is `deny`. Cloud is detected from `CURSOR_AGENT_WORKER_ID` or `CURSOR_WORKER_POOL_NAME` (a worker/pool VM). `CURSOR_AGENT` alone is the local CLI and does not match. |
 | `reason` | Short English note. Includes `vague request, should have asked` when `vague_prompt` is true. |
 
 The latest prompt decides. A delete is requested when that prompt names the file (basename or path) or names a directory the path is under (`src/pkg`). A destructive verb (`удали`, `убери`, `замени`, `перепиши`, `перенеси`, `delete`, `remove`, `replace`, `rewrite`, `migrate`, `rename`, and the inflections in the code) authorizes only those named paths. When the verb is present and the prompt names no file, the tool is allowed and the event is disputed. Vague phrases include `сделай что нужно`, `ты понял`, `заодно`, `как считаешь нужным`, `do whatever is needed`, and `you know what I mean`.

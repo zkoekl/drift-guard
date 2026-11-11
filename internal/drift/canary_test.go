@@ -404,3 +404,88 @@ func TestScanCanaryFixture(t *testing.T) {
 		}
 	}
 }
+
+func TestCanaryRefreshesOnFirstToolHook(t *testing.T) {
+	secret := "test-secret"
+	p := testPaths(t)
+	if err := os.MkdirAll(p.State, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(secretPath(p), []byte(secret+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p.Rules, []byte(`{"canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p.Root, "AGENTS.md"), []byte("# Rules\n\ndrift-guard-canary: pending\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// No sessionStart or beforeSubmitPrompt, as in a Cursor cloud agent.
+	mustHandle(t, p, `{"hook_event_name":"beforeShellExecution","conversation_id":"lazy","command":"true"}`)
+	body, err := os.ReadFile(filepath.Join(p.Root, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	code := CanaryCode("lazy", "AGENTS.md", secret)
+	if !strings.Contains(string(body), "drift-guard-canary: "+code) {
+		t.Fatalf("first tool hook should refresh: %s", body)
+	}
+	if strings.Contains(string(body), "pending") {
+		t.Fatalf("pending left in place: %s", body)
+	}
+	mustHandle(t, p, `{"hook_event_name":"postToolUse","conversation_id":"lazy","tool_name":"Read","tool_input":{"path":"AGENTS.md"}}`)
+	mustHandle(t, p, `{"hook_event_name":"postToolUse","conversation_id":"lazy","tool_name":"Shell","tool_input":{"command":"go test"},"tool_output":{"exitCode":0}}`)
+	reply := "ПРОЧИТАНО: AGENTS.md " + code + "\nЦЕЛЬ: continue\nИСТОЧНИК: go test\nДОКАЗАНО: go test\n"
+	out := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"lazy","text":`+jsonString(reply)+`}`)
+	if _, ok := out["followup_message"]; ok {
+		t.Fatalf("lazy refresh should satisfy canary: %#v", out)
+	}
+}
+
+func TestCanaryDoesNotAskToQuotePending(t *testing.T) {
+	secret := "test-secret"
+	p := testPaths(t)
+	if err := os.MkdirAll(p.State, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(secretPath(p), []byte(secret+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p.Rules, []byte(`{"canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p.Root, "AGENTS.md"), []byte("drift-guard-canary: pending\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// stop with no prior hook, so no refresh. The file still says pending.
+	reply := "ПРОЧИТАНО: AGENTS.md pending\nЦЕЛЬ: continue\nИСТОЧНИК: go test\nДОКАЗАНО: go test\n"
+	out := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"no-refresh","text":`+jsonString(reply)+`}`)
+	msg, _ := out["followup_message"].(string)
+	if strings.Contains(strings.ToLower(msg), "pending") {
+		t.Fatalf("follow-up asked to quote pending: %s", msg)
+	}
+	events, err := LoadEvents(p.Log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ev := range events {
+		if hasRule(ev, "canary-code") {
+			t.Fatalf("unrefreshed session should not follow up canary-code: %#v", ev)
+		}
+		if strings.Contains(strings.ToLower(ev.Reason), "pending") {
+			t.Fatalf("reason asked to quote pending: %#v", ev)
+		}
+	}
+	// A missing quote after a refresh still follows up, but never says pending.
+	mustHandle(t, p, `{"hook_event_name":"sessionStart","conversation_id":"after"}`)
+	reply = "ЦЕЛЬ: continue\nИСТОЧНИК: go test\nДОКАЗАНО: go test\n"
+	mustHandle(t, p, `{"hook_event_name":"postToolUse","conversation_id":"after","tool_name":"Shell","tool_input":{"command":"go test"},"tool_output":{"exitCode":0}}`)
+	out = mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"after","text":`+jsonString(reply)+`}`)
+	msg, _ = out["followup_message"].(string)
+	if !strings.Contains(msg, "reread") {
+		t.Fatalf("missing code after refresh should follow up: %#v", out)
+	}
+	if strings.Contains(strings.ToLower(msg), "pending") {
+		t.Fatalf("follow-up mentioned pending: %s", msg)
+	}
+}

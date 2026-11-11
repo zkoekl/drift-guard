@@ -84,24 +84,25 @@ type ruleFile struct {
 }
 
 type sessionState struct {
-	AssistantText string          `json:"assistant_text"`
-	PrevAssistant string          `json:"prev_assistant,omitempty"`
-	UserText      string          `json:"user_text,omitempty"`
-	PromptSeen    bool            `json:"prompt_seen,omitempty"`
-	Vague         bool            `json:"vague,omitempty"`
-	Created       []string        `json:"created,omitempty"`
-	Pushback      bool            `json:"pushback,omitempty"`
-	Evidence      bool            `json:"evidence,omitempty"`
-	Anchors       []string        `json:"anchors,omitempty"`
-	Reads         []string        `json:"reads,omitempty"`
-	Followups     int             `json:"followups"`
-	Commands      []rules.Command `json:"commands"`
-	Files         []fileNote      `json:"files"`
-	Active        bool            `json:"active,omitempty"`
-	Activation    string          `json:"activation,omitempty"`
-	InactiveNoted bool            `json:"inactive_noted,omitempty"`
-	RulesPath     string          `json:"rules_path,omitempty"`
-	ProjectRoot   string          `json:"project_root,omitempty"`
+	AssistantText   string          `json:"assistant_text"`
+	PrevAssistant   string          `json:"prev_assistant,omitempty"`
+	UserText        string          `json:"user_text,omitempty"`
+	PromptSeen      bool            `json:"prompt_seen,omitempty"`
+	Vague           bool            `json:"vague,omitempty"`
+	Created         []string        `json:"created,omitempty"`
+	Pushback        bool            `json:"pushback,omitempty"`
+	Evidence        bool            `json:"evidence,omitempty"`
+	Anchors         []string        `json:"anchors,omitempty"`
+	Reads           []string        `json:"reads,omitempty"`
+	Followups       int             `json:"followups"`
+	Commands        []rules.Command `json:"commands"`
+	Files           []fileNote      `json:"files"`
+	Active          bool            `json:"active,omitempty"`
+	Activation      string          `json:"activation,omitempty"`
+	InactiveNoted   bool            `json:"inactive_noted,omitempty"`
+	RulesPath       string          `json:"rules_path,omitempty"`
+	ProjectRoot     string          `json:"project_root,omitempty"`
+	CanaryRefreshed bool            `json:"canary_refreshed,omitempty"`
 }
 
 type fileNote struct {
@@ -173,15 +174,14 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 		notePrompt(&state, payload, semanticFromRules(ruleset))
 	}
 	observe(event, payload, &state, now)
+	maybeRefreshCanary(event, &state, p, ruleset, sid)
 	var askMsg string
+	var deleteDeny bool
 	if isBefore(event) {
-		askMsg = guardUnrequestedDelete(event, payload, &state, ruleset, p, sid, now)
+		askMsg, deleteDeny = guardUnrequestedDelete(event, payload, &state, ruleset, p, sid, now)
 	}
 	if err := saveState(p.State, sid, state); err != nil {
 		_ = err
-	}
-	if refreshesCanary(event) {
-		refreshCanaryFiles(p, ruleset, sid)
 	}
 
 	elapsed := time.Since(start).Milliseconds()
@@ -202,6 +202,9 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 
 	if isBefore(event) {
 		if askMsg != "" {
+			if deleteDeny {
+				return denyPermissionJSON(event, askMsg, askMsg), 0
+			}
 			return askJSON(event, askMsg), 0
 		}
 		return allowJSON(event), 0
@@ -258,11 +261,12 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 			reads = mergeUnique(reads, transcriptReads(transcript.Path))
 		}
 		findings = append(findings, CheckCanary(CanaryInput{
-			Text:      assistant,
-			Files:     ruleset.Canary.Files,
-			SessionID: sid,
-			Secret:    secret,
-			Reads:     reads,
+			Text:         assistant,
+			Files:        ruleset.Canary.Files,
+			SessionID:    sid,
+			Secret:       secret,
+			Reads:        reads,
+			SkipFollowup: !state.CanaryRefreshed,
 		})...)
 	}
 	ev := baseVerdict(now, sid, "hook-stop", time.Since(start).Milliseconds())
@@ -543,20 +547,24 @@ func isClaude(event string) bool {
 const pushDenyReason = "A push to main, master, the default branch, a force push, or a tag push is denied."
 
 func denyJSON(event string) []byte {
+	return denyPermissionJSON(event, pushDenyReason, "Push the feature branch without --force. Do not push main, the default branch, or a tag.")
+}
+
+func denyPermissionJSON(event, userMsg, agentMsg string) []byte {
 	if isClaude(event) {
 		b, _ := json.Marshal(map[string]any{
 			"hookSpecificOutput": map[string]any{
 				"hookEventName":            "PreToolUse",
 				"permissionDecision":       "deny",
-				"permissionDecisionReason": pushDenyReason,
+				"permissionDecisionReason": userMsg,
 			},
 		})
 		return append(b, '\n')
 	}
 	b, _ := json.Marshal(map[string]any{
 		"permission":    "deny",
-		"user_message":  pushDenyReason,
-		"agent_message": "Push the feature branch without --force. Do not push main, the default branch, or a tag.",
+		"user_message":  userMsg,
+		"agent_message": agentMsg,
 	})
 	return append(b, '\n')
 }

@@ -68,15 +68,16 @@ func unrequestedDeleteMode(rf ruleFile) string {
 }
 
 // guardUnrequestedDelete logs unrequested deletes. Ask mode returns a
-// permission message. A bare destructive verb, with no file named, is logged
-// disputed and the tool is allowed.
-func guardUnrequestedDelete(event string, payload map[string]any, state *sessionState, rf ruleFile, p Paths, sid string, now time.Time) string {
+// permission message, except in a Cursor cloud agent, where ask is not
+// honored and the hook denies instead. A bare destructive verb, with no
+// file named, is logged disputed and the tool is allowed.
+func guardUnrequestedDelete(event string, payload map[string]any, state *sessionState, rf ruleFile, p Paths, sid string, now time.Time) (string, bool) {
 	if !isBefore(event) || state == nil || unrequestedDeleteMode(rf) == "off" {
-		return ""
+		return "", false
 	}
 	ops := collectDeleteOps(event, payload)
 	if len(ops) == 0 {
-		return ""
+		return "", false
 	}
 	prompt := ""
 	if state.PromptSeen {
@@ -84,6 +85,7 @@ func guardUnrequestedDelete(event string, payload map[string]any, state *session
 	}
 	mode := unrequestedDeleteMode(rf)
 	vague := state.PromptSeen && state.Vague
+	cloud := cursorCloudAgent()
 	var askPaths []string
 	for _, op := range selectUnrequested(ops, state.Created, p.Root, nil) {
 		action, disputed := deletionAction(prompt, state.PromptSeen, op.Path)
@@ -93,12 +95,18 @@ func guardUnrequestedDelete(event string, payload map[string]any, state *session
 		evMode := mode
 		if action == actLog {
 			evMode = "log"
+		} else if action == actAsk && mode == "ask" && cloud {
+			evMode = "deny"
+		}
+		reason := deleteReason(op.Path, vague && action == actAsk, disputed, action == actLog)
+		if evMode == "deny" {
+			reason += "; cursor cloud agent cannot honor ask"
 		}
 		_ = AppendJSONL(p.Log, unrequestedDeleteEvent{
 			TS: stamp(now), Kind: kindUnrequestedDelete, SessionID: sid, Source: event,
 			Mode: evMode, Path: op.Path, Command: op.Command, Tool: op.Tool,
 			PromptKnown: state.PromptSeen, VaguePrompt: vague && action == actAsk,
-			Disputed: disputed, Reason: deleteReason(op.Path, vague && action == actAsk, disputed, action == actLog),
+			Disputed: disputed, Reason: reason,
 			RuleIDs: []string{kindUnrequestedDelete},
 		})
 		if action == actAsk && mode == "ask" {
@@ -106,9 +114,35 @@ func guardUnrequestedDelete(event string, payload map[string]any, state *session
 		}
 	}
 	if len(askPaths) == 0 {
-		return ""
+		return "", false
 	}
-	return deleteAskMessage(askPaths, vague, resolveReplyLanguage(rf, payload))
+	lang := resolveReplyLanguage(rf, payload)
+	if cloud {
+		return deleteCloudDenyMessage(askPaths, vague, lang), true
+	}
+	return deleteAskMessage(askPaths, vague, lang), false
+}
+
+// cursorCloudAgent reports a Cursor cloud or worker VM, not the local CLI.
+// Basis: Cursor cloud agents have no user to answer a permission "ask", so
+// the hook must deny. Detection uses CURSOR_AGENT_WORKER_ID or
+// CURSOR_WORKER_POOL_NAME, which cursor-agent sets on a worker/pool run.
+// The local CLI sets CURSOR_AGENT and CURSOR_AGENT_CLI_LOCAL_MODE instead
+// and must not match. CURSOR_CODE_REMOTE is also ignored: it covers remote
+// SSH workspaces where ask can still reach the user.
+func cursorCloudAgent() bool {
+	return strings.TrimSpace(os.Getenv("CURSOR_AGENT_WORKER_ID")) != "" ||
+		strings.TrimSpace(os.Getenv("CURSOR_WORKER_POOL_NAME")) != ""
+}
+
+func deleteCloudDenyMessage(paths []string, vague bool, lang string) string {
+	msg := deleteAskMessage(paths, vague, lang)
+	if russian(lang) {
+		msg += " В облачном агенте Cursor подтверждение недоступно, поэтому удаление запрещено."
+	} else {
+		msg += " A Cursor cloud agent cannot prompt the user, so the delete is denied."
+	}
+	return capBytes(msg, 400)
 }
 
 // deletionAction applies the latest prompt. A named file, or a path under a
