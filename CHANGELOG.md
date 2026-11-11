@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `v*` tag starts a CI release that attaches Linux and macOS (amd64, arm64) and Windows amd64 archives, plus `checksums.txt`. The tag is written into `drift-guard --version`.
+
 - `drift-guard report --summary` prints a short count-only text summary of the event log (period, counts by kind and check, action counts, session count) and writes no HTML. Paths, commands, prompts, file names, and session ids are omitted so the text can be pasted from a machine that must not leak them.
 
 - PostToolUse now reads Claude Code's `tool_response`. For Bash the documented shape is `stdout`, `stderr`, `interrupted`, and `isImage` (https://code.claude.com/docs/en/hooks). A finished, non-interrupted command counts as exit 0, so a passing test run is no longer missed. `tool_output` and `output`, including `exitCode`, still work.

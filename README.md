@@ -11,7 +11,9 @@ If you are an AI agent asked to connect a repo, follow [CONNECT.md](CONNECT.md).
 
 ## Install
 
-Requires Go 1.22.
+Download a binary for your OS from [Releases](https://github.com/zkoekl/drift-guard/releases) (Linux and macOS, amd64 and arm64; Windows amd64). Unpack it and put `drift-guard` on `PATH`.
+
+Or, with Go 1.22 or later:
 
 ```sh
 go install github.com/zkoekl/drift-guard/cmd/drift-guard@latest
