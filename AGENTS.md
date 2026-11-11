@@ -1,8 +1,10 @@
 # Agents working in this repo
 
+If you are an AI agent asked to connect this repo, follow [CONNECT.md](CONNECT.md).
+
 Copy-in anti-drift rules for other projects: source [`docs/agent-behavior/RULES.md`](docs/agent-behavior/RULES.md), files to copy [`docs/install/`](docs/install/), how the checks relate [`docs/agent-behavior/README.md`](docs/agent-behavior/README.md).
 
-This repository is the Phase 0 prototype. The commands that exist are the checklist in `docs/PLAN.md` (section "Phase 0 prototype") and the notes in `docs/phase0/`. Do not add a model, a daemon, telemetry, or `serve`. Do not commit an active project hook: cloud agents run `.cursor/hooks.json`. The per-project install snippet is `docs/phase0/install/`. The global opt-in kit is `docs/install/global/`. The root hook file is gitignored. The runtime (no daemon, two channels, four layers) is `docs/adr/0005-runtime-model.md`. The latency numbers are `docs/phase0/bench.md`.
+This repository is the Phase 0 prototype. The commands that exist are the checklist in `docs/PLAN.md` (section "Phase 0 prototype") and the notes in `docs/phase0/`. Do not add a model, a daemon, telemetry, or `serve`. This repo commits `.cursor/hooks.json` so a cloud agent that loads project hooks is checked. Do not remove that file to let a push through. The per-project snippet for other repos is `docs/phase0/install/`. The global opt-in kit is `docs/install/global/`. The runtime (no daemon, two channels, four layers) is `docs/adr/0005-runtime-model.md`. The latency numbers are `docs/phase0/bench.md`.
 
 ## Checks and proposals
 
@@ -24,5 +26,6 @@ This repository is the Phase 0 prototype. The commands that exist are the checkl
 - `plan.md` front matter is the contract. Do not require the checker to understand the prose body.
 - Shell out to `git` for diffs. Do not vendor a git implementation.
 - A drift finding is CLI exit `1`. The Cursor `stop` wrapper exits `0` and returns JSON. Exit `2` is for a permission deny (and, on Claude Code, for continuing a `Stop`). `git push` is fail-closed in the per-project hook. The global opt-in kit does not set `failClosed`. Conversation heuristics start log-only, except a missing answer-marker line and a missing or stale canary code, which may send a short follow-up and still do not block. Disputed semantic findings, including a canary whose read log does not show the file, stay in the log and the report. A matching canary means the file was in context this session, not that its rules were applied.
+- Do not commit a rewritten `drift-guard-canary` line. The committed value stays `pending`.
 
 drift-guard-canary: pending

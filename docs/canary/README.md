@@ -70,7 +70,7 @@ drift-guard-canary: pending
 
 Refresh replaces that token for the session. Do not commit the session code. This tool does not restore `pending` and does not block `git commit` of the rewritten line. `git push` stays denied by the existing hook.
 
-The example field list is `docs/semantic/rules.example.json`. The install snippets are `docs/phase0/install/.cursor/hooks.json` and `docs/phase0/install/.claude/settings.json`. This repo does not commit an active `.cursor/hooks.json`.
+The example field list is `docs/semantic/rules.example.json`. The install snippets are `docs/phase0/install/.cursor/hooks.json` and `docs/phase0/install/.claude/settings.json`. This repo commits `.cursor/hooks.json` for dogfood. Do not commit a session canary code over `pending`.
 
 ## Limits
 

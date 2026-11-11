@@ -72,7 +72,7 @@ The private case set is not published in this tree. This file is the plan. The p
 
 ## Phase 0 prototype
 
-The Go command and the hook snippets in `docs/phase0/install/` and `docs/install/global/`. Acceptance is the checklist. Do not commit an active project hook: cloud agents run `.cursor/hooks.json`. The root hook file stays gitignored.
+The Go command and the hook snippets in `docs/phase0/install/` and `docs/install/global/`. Acceptance is the checklist. This repository commits `.cursor/hooks.json` so a cloud agent that loads project hooks is checked. Other projects commit that file only when cloud agents should run it. The procedure is [CONNECT.md](../CONNECT.md).
 
 Checklist:
 

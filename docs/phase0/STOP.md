@@ -11,7 +11,7 @@ Claude Code is the same cap, with `{"decision":"block","reason":"..."}` instead 
 ## How to run it in Cursor
 
 1. Build `drift-guard` and put it on the PATH Cursor uses, or edit the `command` in the snippet to an absolute path.
-2. Copy `docs/phase0/install/.cursor/hooks.json` to `.cursor/hooks.json` in a scratch project, not this repo. Do not commit it. Cloud agents run a committed project hook file.
+2. Copy `docs/phase0/install/.cursor/hooks.json` to `.cursor/hooks.json` in a scratch project, not this repo. This repo already commits a hook, and stacking a second copy is not the experiment. Do not commit the scratch copy. Cloud agents run a committed project hook file.
 3. In that project, write `drift-guard.rules.json`:
 
 ```json

@@ -1,6 +1,6 @@
 # Install the anti-drift rules
 
-These files are for a project whose coding agents should follow the drift-guard behavior rules. They are not this repository's own agent instructions. Leave the root `AGENTS.md` in cursor-drift-guard as it is.
+These files are for a project whose coding agents should follow the drift-guard behavior rules. They are not this repository's own agent instructions. Leave the root `AGENTS.md` in cursor-drift-guard as it is. An agent asked to connect a repo follows [`CONNECT.md`](../../CONNECT.md).
 
 The text of the always-on rule has one source, [`docs/agent-behavior/RULES.md`](../agent-behavior/RULES.md). `AGENTS.md`, `CLAUDE.md`, and `.cursor/rules/drift-guard.mdc` in this directory are generated copies. Regenerate them with `python3 scripts/agent_rules.py --write`. CI runs `python3 scripts/agent_rules.py` and fails when a copy diverges.
 
@@ -22,6 +22,6 @@ cp docs/install/AGENTS.md AGENTS.md
 cp docs/install/CLAUDE.md CLAUDE.md
 ```
 
-The Cursor file sets `alwaysApply: true`. The skills load when a task matches their description. Hooks stay a separate install: [`docs/phase0/install/`](../phase0/install/).
+The Cursor file sets `alwaysApply: true`. The skills load when a task matches their description. `advisory-scan` is for an agent with no hook. Copying it does not install one. Hooks stay a separate install: [`docs/phase0/install/`](../phase0/install/).
 
 How the rules relate to the checks is [`docs/agent-behavior/README.md`](../agent-behavior/README.md).

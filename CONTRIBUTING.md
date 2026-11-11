@@ -10,7 +10,7 @@ The prototype is the Go command in this repository, the hook snippets under [`do
 - The tool never commits, merges, or pushes. Proposals stay files until the owner applies them.
 - No network calls on the default path. No telemetry.
 - Regenerate the installable rule copies with `python3 scripts/agent_rules.py --write` after editing `docs/agent-behavior/RULES.md`. CI runs `python3 scripts/agent_rules.py` and fails when a copy diverges.
-- Agent-facing files stay within 80 lines and 1500 estimated tokens (`ceil(chars/4)`): root `AGENTS.md`, `docs/agent-behavior/RULES.md` and its `docs/install/` copies, and each skill under `docs/install/skills`. `python3 scripts/agent_rules.py` enforces it. The cap is the small end of public files measured on 2026-11-10 (Claude Code `CLAUDE.md` 40 lines / 555 tokens, Supabase `AGENTS.md` 77 lines / 1783 tokens).
+- Agent-facing files stay within 80 lines and 1500 estimated tokens (`ceil(chars/4)`): root `AGENTS.md`, `CONNECT.md`, `docs/agent-behavior/RULES.md` and its generated copies, and each skill under `docs/install/skills`. `python3 scripts/agent_rules.py` enforces it. The cap is the small end of public files measured on 2026-11-10 (Claude Code `CLAUDE.md` 40 lines / 555 tokens, Supabase `AGENTS.md` 77 lines / 1783 tokens).
 
 ## Pull requests
 
