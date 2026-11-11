@@ -5,6 +5,8 @@
 
 **Status: experimental (pre-alpha). Hooks are not verified in a live Cursor session. Expect breaking changes.**
 
+If you are an AI agent asked to connect a repo, follow [CONNECT.md](CONNECT.md).
+
 `drift-guard` is a local checker for an AI coding agent. It compares the diff and the session log with the plan and the rules that were written down. One Go binary, no daemon, no model, and no telemetry. Cursor hooks are the first adapter. Claude Code uses the same engine. A chat with no hooks is checked only when someone runs `drift-guard scan` on a saved transcript.
 
 ## Install
@@ -23,7 +25,7 @@ sh docs/install/global/install.sh
 
 That builds `~/.drift-guard/bin/drift-guard` and a wrapper, and writes `~/.cursor/hooks.json` when that file is empty or missing. If the file already has commands, the script stops and leaves a backup. Remove it with `sh docs/install/global/uninstall.sh`. Cloud agents do not load `~/.cursor/hooks.json`. Details: [`docs/install/global/README.md`](docs/install/global/README.md).
 
-Per project, the checks run for that project. Put `drift-guard` on `PATH`, then copy the snippet and do not commit it (cloud agents run a committed `.cursor/hooks.json`):
+Per project, the checks run for that project. Put `drift-guard` on `PATH`, then copy the snippet. Commit it when a Cursor cloud agent should run it. This repo already commits its own `.cursor/hooks.json`. See [CONNECT.md](CONNECT.md).
 
 ```sh
 go build -o "$HOME/.local/bin/drift-guard" ./cmd/drift-guard
@@ -39,10 +41,10 @@ Rule text for other projects, separate from the hooks, is [`docs/install/README.
 ## Example
 
 ```sh
-echo '{"hook_event_name":"beforeShellExecution","command":"git push"}' | drift-guard hook
+echo '{"hook_event_name":"beforeShellExecution","command":"git push origin HEAD:main"}' | drift-guard hook
 ```
 
-The hook prints `"permission":"deny"`.
+The hook prints `"permission":"deny"`. A normal `git push -u origin HEAD` from a feature branch is allowed. A push to main, master, or the default branch, a force push, and a tag push are denied.
 
 ## Turn the checks on
 

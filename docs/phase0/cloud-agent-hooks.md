@@ -41,3 +41,11 @@ No other hook trace showed up under `/tmp` or `~/.cursor` for this probe. The lo
 A cloud agent whose repository already contains `.cursor/hooks.json` at the start of the writable turn, and whose shell commands then append to the probe log without anyone running the script by hand. That was not this run.
 
 The probe files were removed after the test. They are not part of the tree.
+
+## Retest on 2026-11-11
+
+The product page [Cursor hooks](https://cursor.com/docs/hooks), section "Cloud agent support", was fetched again on 2026-11-11. It says cloud agents run command hooks from a committed `.cursor/hooks.json`, and do not load `~/.cursor/hooks.json`. Hooks do not run during an early read-only turn. They start once the agent has a writable environment. Prompt hooks are not supported.
+
+The same page lists these as supported: `beforeShellExecution`, `afterShellExecution`, `beforeReadFile`, `afterFileEdit`, `preToolUse`, `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`, `beforeSubmitPrompt`, `preCompact`, `afterAgentResponse`, `afterAgentThought`, and `stop`. It lists `sessionStart` as not available on Cursor-managed cloud agents, because a session can still begin read-only and a late `sessionStart` would not be the start of the session. `sessionEnd` is also not available there.
+
+This run repeated the mid-session probe. `.cursor/hooks.json` was written after the session had started, pointing at an allow-only script for `beforeShellExecution`, `afterShellExecution`, `preToolUse`, `postToolUse`, `sessionStart`, `beforeSubmitPrompt`, `afterAgentResponse`, and `stop`. Two later shell commands did not append to the probe log. The only line was from running the script by hand. The startup path is still not verified: this clone did not contain `.cursor/hooks.json` when the run began. The allow-only probe was removed and is not part of the tree.

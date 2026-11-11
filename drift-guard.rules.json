@@ -1,0 +1,9 @@
+{
+  "reply_language": "en",
+  "unrequested_delete": "ask",
+  "test_command": "go test ./...",
+  "test_path_globs": ["**/*.go"],
+  "canary": {
+    "files": [".drift-guard/canary.md"]
+  }
+}

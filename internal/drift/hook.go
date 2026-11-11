@@ -189,13 +189,13 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 		elapsed = 0
 	}
 
-	if cmd, ok := shellCommand(event, payload); ok && isBefore(event) && rules.IsGitPush(cmd) {
+	if cmd, ok := shellCommand(event, payload); ok && isBefore(event) && rules.PushDenied(cmd, gitPushContext(p.Root)) {
 		ev := baseVerdict(now, sid, "hook-shell", elapsed)
 		ev.Channel = "code"
 		ev.Mode = "block"
 		ev.Violations = 1
 		ev.RuleIDs = []string{"git-push"}
-		ev.Reason = "git push is denied"
+		ev.Reason = "protected git push is denied"
 		_ = AppendJSONL(p.Log, ev)
 		return denyJSON(event), 0
 	}
@@ -540,21 +540,23 @@ func isClaude(event string) bool {
 	}
 }
 
+const pushDenyReason = "A push to main, master, the default branch, a force push, or a tag push is denied."
+
 func denyJSON(event string) []byte {
 	if isClaude(event) {
 		b, _ := json.Marshal(map[string]any{
 			"hookSpecificOutput": map[string]any{
 				"hookEventName":            "PreToolUse",
 				"permissionDecision":       "deny",
-				"permissionDecisionReason": "git push is denied by drift-guard.",
+				"permissionDecisionReason": pushDenyReason,
 			},
 		})
 		return append(b, '\n')
 	}
 	b, _ := json.Marshal(map[string]any{
 		"permission":    "deny",
-		"user_message":  "git push is denied by drift-guard.",
-		"agent_message": "git push is denied. Do not push.",
+		"user_message":  pushDenyReason,
+		"agent_message": "Push the feature branch without --force. Do not push main, the default branch, or a tag.",
 	})
 	return append(b, '\n')
 }

@@ -39,7 +39,7 @@ Clear conversation heuristics start **log-only**. They may send `followup_messag
 
 Cursor (checked 2026-11-09, [docs](https://cursor.com/docs/agent/hooks)):
 
-- `beforeShellExecution` and `preToolUse`: deny. `git push` is denied here, with `failClosed: true`, so a crash does not let the push through. The global opt-in kit (`docs/install/global/`) does not set `failClosed`. A dead hook there does not block the push. The per-project snippet does.
+- `beforeShellExecution` and `preToolUse`: deny a push to main, master, or the default branch, a force push, and a tag push. A normal push of the current feature branch is allowed. A push whose destination cannot be named is denied. `failClosed: true` applies to that hook, so a crash does not let a protected push through. The global opt-in kit (`docs/install/global/`) does not set `failClosed`. A dead hook there does not block the push. The per-project snippet does.
 - `beforeShellExecution` and `preToolUse`: an unrequested delete or replace returns permission `ask` (not deny) when the session is active. `drift-guard.rules.json` field `unrequested_delete` is `ask` (default), `log`, or `off`. The event kind is `unrequested-delete`. A destructive verb covers only files the latest prompt names. With no file named, the tool is allowed and the event is disputed. Paths in temp directories and in `bin/`, `dist/`, `node_modules/`, and `.git/` are ignored. If the prompt text was not stored, the finding is disputed and the hook still asks. No model.
 - `postToolUse`: append the command, exit code, and a short output excerpt to `events.jsonl`. May return a short `additional_context`. Do not store `user_email` or file bodies.
 - `afterAgentResponse`: conversation checks. Log-only until promoted.
@@ -49,7 +49,7 @@ Cursor (checked 2026-11-09, [docs](https://cursor.com/docs/agent/hooks)):
 
 Claude Code (checked 2026-11-09, [docs](https://code.claude.com/docs/en/hooks)):
 
-- `PreToolUse` denies `git push` (exit 2 or `permissionDecision: deny`). Set `onFailure: "block"` so a crash denies the call. There is no `failClosed` field; this is the equivalent.
+- `PreToolUse` denies a protected push (exit 2 or `permissionDecision: deny`): main, master, the default branch, a force push, or a tag push. A normal feature-branch push is allowed. Set `onFailure: "block"` so a crash denies the call. There is no `failClosed` field; this is the equivalent.
 - `PostToolUse` feeds the command log. It cannot undo the tool.
 - `Stop`: exit 2, or a block decision, continues the conversation. Cap that the same way (two continuations). Grade `last_assistant_message`, not `transcript_path`, because the transcript file can lag.
 - Project file is `.claude/settings.json`. User-level `~/.claude/settings.json` is not loaded in cloud sessions. Cursor cloud agents likewise ignore `~/.cursor/hooks.json`.
@@ -72,14 +72,14 @@ The private case set is not published in this tree. This file is the plan. The p
 
 ## Phase 0 prototype
 
-The Go command and the hook snippets in `docs/phase0/install/` and `docs/install/global/`. Acceptance is the checklist. Do not commit an active project hook: cloud agents run `.cursor/hooks.json`. The root hook file stays gitignored.
+The Go command and the hook snippets in `docs/phase0/install/` and `docs/install/global/`. Acceptance is the checklist. This repository commits `.cursor/hooks.json` so a cloud agent that loads project hooks is checked. Other projects commit that file only when cloud agents should run it. The procedure is [CONNECT.md](../CONNECT.md).
 
 Checklist:
 
 1. **Dump-hook.** Log raw stdin for `beforeShellExecution`, `preToolUse`, `postToolUse`, `afterAgentResponse`, and `stop`, with `user_email` removed. Record whether `transcript_path` at stop contains the turn that just finished. One real Cursor session is enough.
 2. **Latency.** Same check, three builds: Go, plain JVM, GraalVM native-image. Report p50 and p95, cold and warm. Ship only a build whose p95 is under 50ms. Plain JVM is expected to fail. Write the numbers into ADR 0005 and ADR 0001.
 3. **Stop loop.** A planted violation produces one follow-up, a second if it is still there, and no third. `loop_limit` is 3.
-4. **Block `git push`.** The command does not run. Kill the hook binary and confirm the push still does not run (`failClosed` / `onFailure: block`).
+4. **Block a protected `git push`.** A push to main, the default branch, a force push, or a tag push does not run. A normal feature-branch push does. Kill the hook binary and confirm a protected push still does not run (`failClosed` / `onFailure: block`).
 5. **Two checks.** Language and done-without-tests, as described in [VALIDATION.md](VALIDATION.md). Output is a pass/fail line per check. Conversation hits may be log-only. Code hits must exit 1.
 6. **Scan.** `drift-guard scan` on 2–3 saved transcripts (redacted or synthetic). Exit 0. Findings only in `events.jsonl`.
 7. **Report.** `drift-guard report --no-open` on that log writes HTML with the five charts. No network URL in the file.

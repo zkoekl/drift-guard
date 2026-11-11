@@ -16,7 +16,7 @@ Install steps: [`docs/install/README.md`](../install/README.md).
 | `docs/install/.cursor/rules/drift-guard.mdc` | Same body, with `alwaysApply: true`. |
 | `docs/install/skills/<name>/SKILL.md` | On demand. Copy to `.agents/skills/` and `.claude/skills/`. |
 
-Do not replace this repository's root `AGENTS.md` with the snippet. That file is how agents work on cursor-drift-guard. The snippet is for other projects.
+Do not replace this repository's root `AGENTS.md` with the snippet. That file is how agents work on cursor-drift-guard. The snippet is for other projects. This repo already has the generated Cursor rule and a root `CLAUDE.md`. The connect procedure is [`CONNECT.md`](../../CONNECT.md).
 
 ## Markers
 

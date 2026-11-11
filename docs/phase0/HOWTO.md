@@ -1,6 +1,6 @@
 # How to run the prototype locally
 
-Build the binary, confirm it answers on stdin, then copy the hooks into the project you want to watch. Hooks are not enabled in this repository. Cloud agents run a committed `.cursor/hooks.json`, so the ready file lives in `docs/phase0/install/`, and the root `.cursor/hooks.json` is gitignored.
+Build the binary, confirm it answers on stdin, then copy the hooks into the project you want to watch. This repository commits its own `.cursor/hooks.json` (see [CONNECT.md](../../CONNECT.md)). The portable snippet for other projects stays in `docs/phase0/install/`. Cloud agents load a committed project hook and do not load `~/.cursor/hooks.json`.
 
 ## Build
 
@@ -12,17 +12,17 @@ export PATH="$HOME/.local/bin:$PATH"
 Check, before installing hooks:
 
 ```sh
-printf '%s' '{"hook_event_name":"beforeShellExecution","command":"git status"}' | drift-guard hook
-printf '%s' '{"hook_event_name":"beforeShellExecution","command":"git push"}' | drift-guard hook
+printf '%s' '{"hook_event_name":"beforeShellExecution","command":"git push -u origin HEAD"}' | drift-guard hook
+printf '%s' '{"hook_event_name":"beforeShellExecution","command":"git push origin HEAD:main"}' | drift-guard hook
 ```
 
-The first command prints `"permission":"allow"`. The second prints `"permission":"deny"`.
+On a feature branch, the first prints `"permission":"allow"` and the second prints `"permission":"deny"`. On main, or when the branch cannot be read, both deny.
 
 If Cursor cannot find `drift-guard`, replace `drift-guard hook` in the snippet with an absolute path.
 
 ## Where to copy
 
-Cursor, in the project whose session you want to watch (do not commit it):
+Cursor, in the project whose session you want to watch. Commit the copy when a cloud agent should run it. This repo's committed file calls `.cursor/hooks/drift-guard.sh` instead of `drift-guard hook`, so a fresh cloud VM can build this module. Do not copy that script into a repo that is not this module.
 
 ```sh
 mkdir -p .cursor
@@ -46,7 +46,7 @@ The hook reads language and test rules from `drift-guard.rules.json` in the proj
 {"reply_language":"ru","unrequested_delete":"ask","test_command":"pytest","test_path_globs":["**/*.py"]}
 ```
 
-Without that file, the `git push` deny still works. The language check and the "tests were not run" check stay quiet until a rule names them. `unrequested_delete` defaults to `ask` in an active session. A delete the latest prompt did not name returns permission `ask`. A destructive verb with no file named is allowed and logged as disputed. `log` only writes the event. `off` skips it. `cursor-agent --print` does not send the prompt hooks; that case is disputed and still asks. Paths in temp directories and in `bin/`, `dist/`, `node_modules/`, and `.git/` are ignored.
+Without that file, the `git push` deny still works. The language check and the "tests were not run" check stay quiet until a rule names them. `unrequested_delete` defaults to `ask` in an active session. A delete the latest prompt did not name returns permission `ask`. A destructive verb with no file named is allowed and logged as disputed. `log` only writes the event. `off` skips it. `cursor-agent --print` does not send the prompt hooks; that case is disputed and still asks. A live `--print` run on CLI 2026.11.05 fired `sessionStart`, `preToolUse`, `beforeShellExecution`, and `postToolUse` only. CLI 2026.11.11-043ef28 was installed here and was not logged in, so that session was not repeated. In that build the headless path calls `sessionEnd` and does not call `beforeSubmitPrompt`, `afterAgentResponse`, or `stop`. Those three calls are on the interactive path. Paths in temp directories and in `bin/`, `dist/`, `node_modules/`, and `.git/` are ignored.
 
 Four semantic checks do not call a model. The default line names are `ЦЕЛЬ`/`GOAL`, `ИСТОЧНИК`/`SOURCE`, and `ДОКАЗАНО`/`PROOF`. On `stop`, an empty or missing line produces a short follow-up, at most two, and does not block the session. A file named on the source line that was not opened, or a command on `ДОКАЗАНО` without a zero exit, is disputed in `events.jsonl` and in the report. `beforeSubmitPrompt` stores the request anchors. If the goal, the changed files, and the reply share too few anchors, that is disputed. A change of conclusion after pushback, with no read and no command, is disputed `sycophancy`. A path or version in the reply that was not read is disputed `answered-from-memory`. Example fields: `docs/semantic/rules.example.json`. The default `anchor_min_shared` is 1. A non-empty phrase list in the rules replaces the built-in list. It does not extend it.
 
@@ -68,7 +68,7 @@ On `stop`, the dump has a `transcript` object:
 
 ## git push
 
-`beforeShellExecution` and `preToolUse`/`PreToolUse` for a shell do not let the command run when it is `git push` (including after `&&` and inside `sh -c`). `echo "git push"` is not blocked. Killing the binary and checking that the push still does not run can only be done in Cursor or Claude: a crash triggers `failClosed` / `onFailure: block`. That is **not verified** here.
+`beforeShellExecution` and `preToolUse`/`PreToolUse` for a shell do not let the command run when it pushes main, master, the default branch, a tag, or uses `--force` (including after `&&` and inside `sh -c`). A normal push of the current feature branch is allowed. `echo "git push"` is not blocked. Killing the binary and checking that the push still does not run can only be done in Cursor or Claude: a crash triggers `failClosed` / `onFailure: block`. That is **not verified** here.
 
 ## Does the agent continue after stop
 

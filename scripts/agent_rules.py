@@ -3,14 +3,15 @@
 
 Source: docs/agent-behavior/RULES.md
 Copies: docs/install/AGENTS.md, docs/install/CLAUDE.md,
-        docs/install/.cursor/rules/drift-guard.mdc
+        docs/install/.cursor/rules/drift-guard.mdc,
+        root CLAUDE.md, .cursor/rules/drift-guard.mdc
 
 The check also enforces the agent-file budget: at most 80 lines and
 1500 estimated tokens, ceil(chars/4). That is the small end of public
 files measured on 2026-11-10 (Claude Code CLAUDE.md 40 lines / 555
 tokens, Supabase AGENTS.md 77 lines / 1783 tokens). It covers
-docs/agent-behavior/RULES.md, the install copies, root AGENTS.md, and
-each skill under docs/install/skills.
+docs/agent-behavior/RULES.md, the install copies, the dogfood copies,
+root AGENTS.md, CONNECT.md, and each skill under docs/install/skills.
 
     python3 scripts/agent_rules.py          # compare, exit 1 on drift
     python3 scripts/agent_rules.py --write  # regenerate the copies
@@ -28,12 +29,15 @@ INSTALL = ROOT / "docs" / "install"
 AGENTS = INSTALL / "AGENTS.md"
 CLAUDE = INSTALL / "CLAUDE.md"
 MDC = INSTALL / ".cursor" / "rules" / "drift-guard.mdc"
+PROJECT_MDC = ROOT / ".cursor" / "rules" / "drift-guard.mdc"
 SKILLS = INSTALL / "skills"
 MAX_LINES = 80
 MAX_TOKENS = 1500
 MAX_SKILL_LINES = 80
 MAX_SKILL_TOKENS = 1500
 ROOT_AGENTS = ROOT / "AGENTS.md"
+ROOT_CLAUDE = ROOT / "CLAUDE.md"
+CONNECT = ROOT / "CONNECT.md"
 
 FRONT = """---
 description: Anti-drift behavior for coding agents. Apply on every turn.
@@ -70,7 +74,9 @@ def expected(body):
     return {
         AGENTS: body,
         CLAUDE: body,
+        ROOT_CLAUDE: body,
         MDC: FRONT + body,
+        PROJECT_MDC: FRONT + body,
     }
 
 
@@ -126,6 +132,19 @@ def check_pointer():
     print(f"{ROOT_AGENTS.relative_to(ROOT)}: {lines} lines, {est} tokens")
     if "docs/agent-behavior/RULES.md" not in agents or "docs/install/" not in agents:
         sys.exit("root AGENTS.md must point at docs/agent-behavior/RULES.md and docs/install/")
+    if "CONNECT.md" not in agents:
+        sys.exit("root AGENTS.md must point at CONNECT.md")
+
+
+def check_connect():
+    if not CONNECT.is_file():
+        sys.exit("missing CONNECT.md")
+    text = CONNECT.read_text(encoding="utf-8")
+    lines, est = check_budget(CONNECT.relative_to(ROOT).as_posix(), text)
+    print(f"{CONNECT.relative_to(ROOT)}: {lines} lines, {est} tokens")
+    for needle in ("Disconnect", "advisory", "go install", "git push", "drift-guard scan"):
+        if needle not in text:
+            sys.exit(f"CONNECT.md must mention {needle}")
 
 
 def check_readme(body):
@@ -174,6 +193,7 @@ def main():
         sys.exit("drift-guard.mdc lost alwaysApply: true")
     skills = check_skills()
     check_pointer()
+    check_connect()
     check_readme(body)
     print(f"{SOURCE.relative_to(ROOT)}: {src_lines} lines, {len(body)} chars, {src_tokens} tokens")
     print(f"{MDC.relative_to(ROOT)}: {mdc_lines} lines, {len(mdc_text)} chars, {mdc_tokens} tokens")
