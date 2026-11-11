@@ -3,7 +3,7 @@
 [![CI](https://github.com/zkoekl/drift-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/zkoekl/drift-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/zkoekl/drift-guard/blob/main/LICENSE)
 
-**Status: experimental (pre-alpha). Hooks are not verified in a live Cursor session. Expect breaking changes.**
+Tested with scripted agent sessions and live Cursor CLI and cloud-agent sessions.
 
 If you are an AI agent asked to connect a repo, follow [CONNECT.md](CONNECT.md).
 
