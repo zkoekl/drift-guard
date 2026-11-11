@@ -76,13 +76,13 @@ drift-guard --version
 drift-guard hook
 drift-guard check --input file.json [--log events.jsonl]
 drift-guard scan [--log events.jsonl] <transcript>
-drift-guard report [--log events.jsonl] [--output file.html] [--no-open]
+drift-guard report [--log events.jsonl] [--output file.html] [--no-open] [--summary]
 drift-guard scope [--require-scope] [--scope-file f] [--files f|-] [--staged]
                   [--base ref --head ref]
 drift-guard canary refresh --session ID [--rules f] [--root dir] [--secret-file f]
 ```
 
-`hook` reads stdin JSON and writes stdout JSON. Exit `0` is clean, exit `1` is a violation, exit `2` is a usage error. The Cursor `stop` wrapper exits `0` and returns JSON. `scan` exits `0` and writes findings to the log. `report --no-open` writes one HTML file and exits. `scope` is the pre-commit and pull-request backstop: a changed path that matches no glob fails. `canary refresh` rewrites `drift-guard-canary:` in the configured files and does not print the code.
+`hook` reads stdin JSON and writes stdout JSON. Exit `0` is clean, exit `1` is a violation, exit `2` is a usage error. The Cursor `stop` wrapper exits `0` and returns JSON. `scan` exits `0` and writes findings to the log. `report --no-open` writes one HTML file and exits. `report --summary` prints a short count-only text summary with no paths, commands, prompts, file names, or session ids, and writes no HTML. `scope` is the pre-commit and pull-request backstop: a changed path that matches no glob fails. `canary refresh` rewrites `drift-guard-canary:` in the configured files and does not print the code.
 
 Scope for a pull request is a block in the body. CI passes `--require-scope` and fails when the block is missing or a changed file matches none of the globs. See [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
 

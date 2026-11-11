@@ -614,9 +614,7 @@ func observe(event string, payload map[string]any, state *sessionState, now time
 		state.Evidence = true
 		if cmd, ok := shellCommand(event, payload); ok && cmd != "" {
 			exitCode := -1
-			if n, ok := exitFromOutput(payload["tool_output"]); ok {
-				exitCode = n
-			} else if n, ok := exitFromOutput(payload["output"]); ok {
+			if n, ok := commandExit(payload); ok {
 				exitCode = n
 			}
 			state.Commands = append(state.Commands, rules.Command{Command: cmd, ExitCode: exitCode})
@@ -718,6 +716,21 @@ func toolPath(payload map[string]any) string {
 	return ""
 }
 
+// commandExit reads a command result from a PostToolUse payload.
+// Claude Code documents tool_response (https://code.claude.com/docs/en/hooks).
+// For Bash the shape is {stdout, stderr, interrupted, isImage}, with no exit
+// code. PostToolUse fires after a successful tool call; interrupted means the
+// command did not finish. Cursor payloads still use tool_output or output,
+// often with exitCode or exit_code.
+func commandExit(payload map[string]any) (int, bool) {
+	for _, key := range []string{"tool_response", "tool_output", "output"} {
+		if n, ok := exitFromOutput(payload[key]); ok {
+			return n, true
+		}
+	}
+	return -1, false
+}
+
 func exitFromOutput(v any) (int, bool) {
 	switch t := v.(type) {
 	case map[string]any:
@@ -727,6 +740,15 @@ func exitFromOutput(v any) (int, bool) {
 		if n, ok := t["exit_code"]; ok {
 			return num(n), true
 		}
+		if interruptedTrue(t["interrupted"]) {
+			return 1, true
+		}
+		if _, ok := t["stdout"]; ok {
+			return 0, true
+		}
+		if _, ok := t["stderr"]; ok {
+			return 0, true
+		}
 	case string:
 		var m map[string]any
 		if json.Unmarshal([]byte(t), &m) == nil {
@@ -734,6 +756,17 @@ func exitFromOutput(v any) (int, bool) {
 		}
 	}
 	return -1, false
+}
+
+func interruptedTrue(v any) bool {
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		return strings.EqualFold(t, "true")
+	default:
+		return false
+	}
 }
 
 func assistantText(payload map[string]any) string {
