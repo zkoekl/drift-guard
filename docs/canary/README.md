@@ -14,7 +14,7 @@ The agent is expected to see the code only by reading the file after a refresh.
 drift-guard-canary: <code>
 ```
 
-The same rewrite runs inside the hook on `sessionStart`, `SessionStart`, `beforeSubmitPrompt`, and `UserPromptSubmit`. Those events return the usual allow or empty JSON. The code is not a field in that JSON, and it is not written to `events.jsonl` or the hook dump.
+The same rewrite runs inside the hook on `sessionStart`, `SessionStart`, `beforeSubmitPrompt`, and `UserPromptSubmit`, and lazily on the first tool hook (`preToolUse`, `beforeShellExecution`, and the matching post events) when none of those session events has run yet. Cursor cloud agents do not fire `sessionStart`; the lazy path covers that. A `stop` hook does not refresh, because that would change the code after the reply. Those events return the usual allow or empty JSON. The code is not a field in that JSON, and it is not written to `events.jsonl` or the hook dump.
 
 At `stop`, drift-guard recomputes the code. It does not read the canary line back out of the file. The file is only the delivery channel. The reply must contain, for each required file:
 
@@ -79,7 +79,7 @@ These are limits of this design, not edge cases to ignore.
 - A valid quote means the code for this session was in the reply. It does not mean the rules were followed, understood, or even read past that one line.
 - The hook stdout does not contain the code. Anything else that can read the file can. Cursor may inject `AGENTS.md` into the prompt after refresh without a Read tool. The code check can then pass with no tool read, and the result is the disputed `canary-read` finding, not a follow-up. Whether injection happens before or after `beforeSubmitPrompt` was not verified in Cursor.
 - An agent that reads `.drift-guard/canary-secret` and recomputes the HMAC can quote a correct code without reading the rule file. The read log then disputes the finding unless the rule file was also read. The 8 hex characters are 32 bits. They are short so a reply can quote them. They are not a guess-resistance boundary.
-- If `sessionStart` / `beforeSubmitPrompt` did not run, the file still has the previous code or `pending`. A careful read of that line fails the recomputed check. The follow-up says to reread, which only works after a refresh has written this session's code. This repo's cloud-agent note already records that a hook added mid-run did not run. That was not retested here.
+- If no refresh has run in this session, the file may still say `pending`. The stop hook does not follow up and does not ask the agent to quote `pending`. The first tool hook refreshes the line so a later stop can check a real code.
 - `stop` does not refresh. Refreshing there would change the code after the reply.
 - The read log is only as complete as the hooks that fired. A read that never hit `postToolUse`, a shell reader, or the transcript is invisible. The code can still match. That case is disputed, not blocking.
 - Scan of a saved transcript checks the quote and the transcript's own `reads`. It does not open the rule files on disk.

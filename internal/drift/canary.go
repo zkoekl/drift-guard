@@ -31,11 +31,12 @@ func CanaryCode(sessionID, filePath, secret string) string {
 // CanaryInput is one reply plus the files the rules require.
 // Reads is the session read log. Root is only used when rewriting files.
 type CanaryInput struct {
-	Text      string
-	Files     []string
-	SessionID string
-	Secret    string
-	Reads     []string
+	Text         string
+	Files        []string
+	SessionID    string
+	Secret       string
+	Reads        []string
+	SkipFollowup bool
 }
 
 // CheckCanary compares ПРОЧИТАНО / READ quotes to this session's codes.
@@ -43,6 +44,9 @@ type CanaryInput struct {
 // A matching code whose file is absent from Reads is disputed and does not follow up.
 // An empty file list means the check is off.
 // A matching code shows the file was in context this session, not that its rules were applied.
+// SkipFollowup is set when this session has not refreshed the canary lines, so
+// the files may still say "pending". In that case a missing or stale quote is
+// not a follow-up: never ask an agent to quote pending.
 func CheckCanary(in CanaryInput) []Finding {
 	files := canaryFiles(in.Files)
 	if len(files) == 0 {
@@ -56,7 +60,9 @@ func CheckCanary(in CanaryInput) []Finding {
 			want = CanaryCode(in.SessionID, file, in.Secret)
 		}
 		if !quoteMatches(file, want, quotes) {
-			stale = append(stale, file)
+			if !in.SkipFollowup {
+				stale = append(stale, file)
+			}
 			continue
 		}
 		if !wasOpened(file, in.Reads) {
@@ -290,6 +296,31 @@ func refreshesCanary(event string) bool {
 	default:
 		return false
 	}
+}
+
+func isToolHook(event string) bool {
+	switch event {
+	case "preToolUse", "PreToolUse", "postToolUse", "PostToolUse",
+		"beforeShellExecution", "afterShellExecution",
+		"afterFileEdit", "beforeReadFile":
+		return true
+	default:
+		return false
+	}
+}
+
+// maybeRefreshCanary rewrites canary lines at session start and on each
+// prompt, and lazily on the first tool hook when those events did not run
+// (Cursor cloud agents do not fire sessionStart).
+func maybeRefreshCanary(event string, state *sessionState, p Paths, rf ruleFile, sid string) {
+	if state == nil || len(rf.Canary.Files) == 0 {
+		return
+	}
+	if !refreshesCanary(event) && (state.CanaryRefreshed || !isToolHook(event)) {
+		return
+	}
+	refreshCanaryFiles(p, rf, sid)
+	state.CanaryRefreshed = true
 }
 
 func refreshCanaryFiles(p Paths, rf ruleFile, sid string) {

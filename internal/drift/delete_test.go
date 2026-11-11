@@ -385,3 +385,66 @@ func hookJSON(t *testing.T, v map[string]any) string {
 	}
 	return string(b)
 }
+
+func TestHookUnrequestedDeleteCloudDeniesAsk(t *testing.T) {
+	t.Setenv("CURSOR_AGENT_WORKER_ID", "worker-test-1")
+	t.Setenv("CURSOR_WORKER_POOL_NAME", "")
+	p := testPaths(t)
+	if err := os.WriteFile(filepath.Join(p.Root, "hello.py"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out := mustHandle(t, p, hookJSON(t, map[string]any{
+		"hook_event_name": "beforeShellExecution", "conversation_id": "cloud", "command": "rm hello.py",
+	}))
+	if out["permission"] != "deny" {
+		t.Fatalf("cloud should deny ask: %#v", out)
+	}
+	msg, _ := out["user_message"].(string)
+	if !strings.Contains(msg, "cloud agent") && !strings.Contains(msg, "cannot prompt") {
+		t.Fatalf("deny message: %q", msg)
+	}
+	evs := deleteEvents(t, p)
+	if len(evs) != 1 || evs[0].Mode != "deny" {
+		t.Fatalf("event %#v", evs)
+	}
+	if !strings.Contains(evs[0].Reason, "cannot honor ask") {
+		t.Fatalf("reason %q", evs[0].Reason)
+	}
+
+	// The local CLI sets CURSOR_AGENT, not a worker id, and must still ask.
+	t.Setenv("CURSOR_AGENT_WORKER_ID", "")
+	t.Setenv("CURSOR_WORKER_POOL_NAME", "")
+	t.Setenv("CURSOR_AGENT", "1")
+	t.Setenv("CURSOR_AGENT_CLI_LOCAL_MODE", "true")
+	local := testPaths(t)
+	if err := os.WriteFile(filepath.Join(local.Root, "hello.py"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := mustHandle(t, local, hookJSON(t, map[string]any{
+		"hook_event_name": "beforeShellExecution", "conversation_id": "local-cli", "command": "rm hello.py",
+	}))
+	if got["permission"] != "ask" {
+		t.Fatalf("local CLI should still ask: %#v", got)
+	}
+}
+
+func TestHookUnrequestedDeleteCloudLogModeAllows(t *testing.T) {
+	t.Setenv("CURSOR_AGENT_WORKER_ID", "worker-test-1")
+	p := testPaths(t)
+	if err := os.WriteFile(p.Rules, []byte(`{"unrequested_delete":"log"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(p.Root, "hello.py"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out := mustHandle(t, p, hookJSON(t, map[string]any{
+		"hook_event_name": "beforeShellExecution", "conversation_id": "cloud-log", "command": "rm hello.py",
+	}))
+	if out["permission"] != "allow" {
+		t.Fatalf("log mode should not deny: %#v", out)
+	}
+	evs := deleteEvents(t, p)
+	if len(evs) != 1 || evs[0].Mode != "log" {
+		t.Fatalf("event %#v", evs)
+	}
+}

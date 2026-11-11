@@ -65,7 +65,7 @@ A per-project hook file is already on for that project. The same rules file name
 }
 ```
 
-`unrequested_delete` is `ask`, `log`, or `off`. The default in an active session is `ask`. `ask` returns permission `ask` before a delete or replace the latest prompt did not request, and it does not deny the call. `log` records the event and allows the call. `off` skips the check. When the session never received the prompt text, the event is disputed. The field list is in [`docs/METRICS.md`](docs/METRICS.md).
+`unrequested_delete` is `ask`, `log`, or `off`. The default in an active session is `ask`. `ask` returns permission `ask` before a delete or replace the latest prompt did not request, and it does not deny the call, except in a Cursor cloud agent (`CURSOR_AGENT_WORKER_ID` or `CURSOR_WORKER_POOL_NAME`), where `ask` is ignored and the hook denies instead. `log` records the event and allows the call. `off` skips the check. When the session never received the prompt text, the event is disputed. The field list is in [`docs/METRICS.md`](docs/METRICS.md).
 
 `DRIFT_GUARD_RULES` points at another path. An example with the optional lists is [`docs/semantic/rules.example.json`](docs/semantic/rules.example.json).
 
