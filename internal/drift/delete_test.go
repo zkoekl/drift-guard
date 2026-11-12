@@ -209,7 +209,7 @@ func TestHookUnrequestedDeleteHelloGo(t *testing.T) {
 		"tool_input": map[string]any{"path": "hello.py"},
 	}))
 	want := "Удаление/замена hello.py не было в задаче. Размытый запрос, нужно было спросить. Уточни у пользователя, прежде чем удалять."
-	if deleted["permission"] != "ask" || deleted["user_message"] != want {
+	if deleted["permission"] != "deny" || deleted["user_message"] != want {
 		t.Fatalf("%#v", deleted)
 	}
 	mainGo := mustHandle(t, p, hookJSON(t, map[string]any{
@@ -257,7 +257,7 @@ func TestHookUnrequestedDeleteCLIAndModes(t *testing.T) {
 		"hook_event_name": "preToolUse", "conversation_id": "made", "tool_name": "Delete",
 		"tool_input": map[string]any{"path": "hello.py"},
 	}))
-	if got["permission"] != "ask" || len(deleteEvents(t, created)) != 1 {
+	if got["permission"] != "deny" || len(deleteEvents(t, created)) != 1 {
 		t.Fatalf("created %#v", got)
 	}
 
@@ -446,5 +446,50 @@ func TestHookUnrequestedDeleteCloudLogModeAllows(t *testing.T) {
 	evs := deleteEvents(t, p)
 	if len(evs) != 1 || evs[0].Mode != "log" {
 		t.Fatalf("event %#v", evs)
+	}
+}
+
+func TestAskOnlyWhereHostEnforcesIt(t *testing.T) {
+	p := testPaths(t)
+	if err := os.WriteFile(filepath.Join(p.Root, "hello.py"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	shell := map[string]any{"hook_event_name": "beforeShellExecution", "conversation_id": "ask-shell", "command": "rm hello.py"}
+	if got := mustHandle(t, p, hookJSON(t, shell)); got["permission"] != "ask" {
+		t.Fatalf("beforeShellExecution should ask: %#v", got)
+	}
+	tool := map[string]any{
+		"hook_event_name": "preToolUse", "conversation_id": "ask-tool", "tool_name": "Delete",
+		"tool_input": map[string]any{"path": "hello.py"},
+	}
+	got := mustHandle(t, p, hookJSON(t, tool))
+	if got["permission"] != "deny" || got["user_message"] == "" || got["user_message"] != got["agent_message"] {
+		t.Fatalf("preToolUse Delete should deny with the ask message: %#v", got)
+	}
+	if !strings.Contains(got["user_message"].(string), "Ask the user before deleting") {
+		t.Fatalf("message %q", got["user_message"])
+	}
+	evs := deleteEvents(t, p)
+	last := evs[len(evs)-1]
+	if last.Mode != "deny" || !strings.Contains(last.Reason, "preToolUse cannot honor ask") {
+		t.Fatalf("event %#v", last)
+	}
+	// A shell command seen at preToolUse is left to beforeShellExecution, which asks.
+	viaShell := map[string]any{
+		"hook_event_name": "preToolUse", "conversation_id": "ask-pre-shell", "tool_name": "Shell",
+		"tool_input": map[string]any{"command": "rm hello.py"},
+	}
+	if got := mustHandle(t, p, hookJSON(t, viaShell)); got["permission"] != "allow" {
+		t.Fatalf("preToolUse Shell should defer to beforeShellExecution: %#v", got)
+	}
+	// Claude Code enforces ask on PreToolUse.
+	claude := map[string]any{
+		"hook_event_name": "PreToolUse", "session_id": "ask-claude", "tool_name": "Bash",
+		"tool_input": map[string]any{"command": "rm hello.py"},
+	}
+	out := mustHandle(t, p, hookJSON(t, claude))
+	hs, _ := out["hookSpecificOutput"].(map[string]any)
+	if hs["permissionDecision"] != "ask" {
+		t.Fatalf("Claude should ask: %#v", out)
 	}
 }
