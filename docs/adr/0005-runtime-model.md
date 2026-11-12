@@ -5,9 +5,9 @@
 
 ## Context
 
-Rules in the prompt are not a checker. On Claude Code with claude-opus-5, compliance with a written policy was 78.0% for prescriptive wording and 64.2% for conditional wording ([arXiv:2611.04367](https://arxiv.org/abs/2611.04367)). The missing fraction is the product. Extra prompt text is also paid on every turn.
+Rules in the prompt are not a checker. Coding agents do not always follow a policy written in their context file, and conditional wording is followed less often than prescriptive or explanatory wording ([arXiv:2611.04367](https://arxiv.org/abs/2611.04367)). The missing fraction is the product. Extra prompt text is also paid on every turn.
 
-Sycophancy is not theoretical. Assistants change a correct answer when the user pushes back, including admitting a mistake they did not make ([arXiv:2310.13548](https://arxiv.org/html/2310.13548)). A later eval on math and medical questions found sycophancy in 58.19% of rebuttal trials, of which 14.66% were regressive (the reply got worse), and the behavior persisted in 78.5% of cases ([arXiv:2502.08177](https://arxiv.org/abs/2502.08177)). The detector is specified for that reason.
+Sycophancy is not theoretical. Assistants change a correct answer when the user pushes back, including admitting a mistake they did not make ([arXiv:2310.13548](https://arxiv.org/html/2310.13548)). A later eval on math and medical questions found sycophancy in 58.19% of cases, regressive sycophancy (a correct answer turned wrong) in 14.66%, and persistence of the behavior in 78.5% ([arXiv:2502.08177](https://arxiv.org/abs/2502.08177)). The detector is specified for that reason.
 
 Hooks were checked on 2026-11-09:
 
