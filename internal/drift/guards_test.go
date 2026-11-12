@@ -112,6 +112,7 @@ func TestShellGuards(t *testing.T) {
 		{`python3 -c "import os; os.system('git reset --hard')"`, ruleDestructive},
 		{`node -e "require('child_process').execSync('rm -rf ~')"`, ruleDestructive},
 		{`perl -e 'system("git clean -fd")'`, ruleDestructive},
+		{`python3 -c "import os; os.system(\"git reset --hard\")"`, ruleDestructive},
 		{`python3 -c "print('git reset --soft HEAD')"`, ""},
 		{"echo x | xargs git reset --hard", ruleDestructive},
 		{"git ls-files | xargs -n1 rm -rf /", ruleDestructive},
@@ -372,7 +373,7 @@ func TestSymlinkToSecret(t *testing.T) {
 }
 
 func TestTokenizeJoinsQuoteFragments(t *testing.T) {
-	for in, want := range map[string]string{`cat .e""nv`: ".env", `cat ".en"v`: ".env", `cat '.e'n"v"`: ".env", `cat a" b"`: "a b"} {
+	for in, want := range map[string]string{`cat .e""nv`: ".env", `cat ".en"v`: ".env", `cat '.e'n"v"`: ".env", `cat a" b"`: "a b", `echo "say \"hi\" now"`: `say "hi" now`} {
 		if got := rules.Tokens(in); len(got) != 2 || got[1] != want {
 			t.Errorf("%q: %q", in, got)
 		}
