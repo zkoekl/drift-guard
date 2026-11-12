@@ -95,14 +95,12 @@ func tokenize(seg string) []string {
 		if quote != 0 {
 			if c == quote {
 				quote = 0
-				flush()
 			} else {
 				b.WriteByte(c)
 			}
 			continue
 		}
 		if c == '\'' || c == '"' {
-			flush()
 			quote = c
 			continue
 		}

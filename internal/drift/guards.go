@@ -25,8 +25,9 @@ var guardMessages = map[string]string{
 	ruleGuardTamper: "Hook and drift-guard settings are not yours to change. Ask the user to make this change.",
 }
 
-// pipeToShell matches a download piped, or process-substituted, into a shell.
-var pipeToShell = regexp.MustCompile(`\b(curl|wget)\b[^|;&]*\|\s*(sudo(\s+-\S+)*\s+)?(\S*/)?(ba|z|da|k)?sh\b|\b(ba|z|da|k)?sh\b[^|;&]*[<$]\(\s*(curl|wget)\b`)
+// pipeToShell matches a download piped into a shell, or into an interpreter that reads
+// its program from stdin, or process-substituted into a shell.
+var pipeToShell = regexp.MustCompile(`\b(curl|wget)\b[^|;&]*\|\s*(sudo(\s+-\S+)*\s+)?(\S*/)?((ba|z|da|k)?sh\b|(python[0-9.]*|perl|ruby|node)(\s+-)?\s*($|[;&|)]))|\b(ba|z|da|k)?sh\b[^|;&]*[<$]\(\s*(curl|wget)\b`)
 
 // guardVerdict returns the rule id that denies this hook call, or "".
 // The order is destructive, secrets, then the guard's own files.
@@ -34,7 +35,7 @@ func guardVerdict(event string, payload map[string]any, rf ruleFile, root string
 	if cmd, ok := shellCommand(event, payload); ok {
 		return shellVerdict(cmd, rf, root, 0)
 	}
-	return toolVerdict(event, payload, rf)
+	return toolVerdict(event, payload, rf, root)
 }
 
 func logGuard(p Paths, sid, source, id string, now time.Time, elapsed int64) {
@@ -55,6 +56,9 @@ func shellVerdict(command string, rf ruleFile, root string, depth int) string {
 		for i < len(toks) {
 			t := strings.ToLower(cmdBase(toks[i]))
 			if isAssign(toks[i]) {
+				if secretShell("", []string{toks[i][strings.IndexByte(toks[i], '=')+1:]}, rf, root) {
+					return ruleSecretRead
+				}
 				i++
 			} else if strings.HasPrefix(toks[i], "-") || t == "sudo" || t == "env" || t == "command" || t == "nohup" || t == "time" {
 				i++
@@ -66,7 +70,23 @@ func shellVerdict(command string, rf ruleFile, root string, depth int) string {
 			continue
 		}
 		base, args := cmdBase(toks[i]), toks[i+1:]
+		for base == "xargs" { // the command it runs is the first word that is not an option
+			j := 0
+			for j < len(args) && strings.HasPrefix(args[j], "-") {
+				j++
+			}
+			if j == len(args) {
+				break
+			}
+			toks, base, args = args[j:], cmdBase(args[j]), args[j+1:]
+			i = 0
+		}
 		if depth < 3 {
+			for words, k := inlineWords(base, args), 0; k < len(words); k++ {
+				if destructiveCommand(cmdBase(words[k]), words[k:], root) {
+					return ruleDestructive
+				}
+			}
 			if sub := nestedShell(base, args); sub != "" {
 				if id := shellVerdict(sub, rf, root, depth+1); id != "" {
 					return id
@@ -76,7 +96,7 @@ func shellVerdict(command string, rf ruleFile, root string, depth int) string {
 		if destructiveCommand(base, toks[i:], root) {
 			return ruleDestructive
 		}
-		if secretShell(base, toks[i+1:], rf) {
+		if secretShell(base, toks[i+1:], rf, root) {
 			return ruleSecretRead
 		}
 		if selfShell(base, toks[i:], rf) {
@@ -101,6 +121,22 @@ func nestedShell(base string, args []string) string {
 	return ""
 }
 
+// inlineWords splits the code of `python -c`, `node -e` and the like into words,
+// call punctuation as spaces, so os.system('rm -rf /') reads as a shell line.
+func inlineWords(base string, args []string) []string {
+	switch base {
+	case "python", "python3", "node", "perl", "ruby":
+		for j := 0; j+1 < len(args); j++ {
+			if args[j] == "-c" || args[j] == "-e" {
+				return rules.Tokens(callSyntax.Replace(args[j+1]))
+			}
+		}
+	}
+	return nil
+}
+
+var callSyntax = strings.NewReplacer("(", " ", ")", " ", "'", " ", `"`, " ", ",", " ", ";", " ; ")
+
 func destructiveCommand(base string, toks []string, root string) bool {
 	args := toks[1:]
 	switch base {
@@ -109,10 +145,13 @@ func destructiveCommand(base string, toks []string, root string) bool {
 		flags, pos := splitFlags(rest)
 		switch sub {
 		case "reset":
-			return hasLong(flags, "--hard")
+			return hasLong(flags, "--hard") || hasLong(flags, "--merge")
 		case "clean":
 			return (hasLong(flags, "--force") || hasShort(flags, 'f')) && !hasLong(flags, "--dry-run") && !hasShort(flags, 'n')
 		case "checkout", "restore":
+			if hasLong(flags, "--force") || hasShort(flags, 'f') {
+				return true
+			}
 			staged := (hasLong(flags, "--staged") || hasShort(flags, 'S')) && !hasLong(flags, "--worktree") && !hasShort(flags, 'W')
 			return !staged && anyOf(pos, ".", "./", "*")
 		case "stash":
@@ -132,7 +171,9 @@ func destructiveCommand(base string, toks []string, root string) bool {
 	return false
 }
 
-// wholeTree reports a target that is the filesystem root, the home directory,
+const systemDirs = " /bin /boot /dev /etc /home /lib /lib64 /opt /proc /root /sbin /srv /sys /usr /var "
+
+// wholeTree reports a target that is the filesystem root, a top-level system directory, the home directory,
 // the repository root, a parent directory, or everything in one of them.
 func wholeTree(t, root string) bool {
 	if t == "*" {
@@ -143,21 +184,32 @@ func wholeTree(t, root string) bool {
 		return true
 	}
 	n := guardPath(s)
-	return n == "~" || n == "$PWD" || n == "${PWD}" || strings.Trim(n, "./") == "" || (filepath.IsAbs(n) && n == path.Clean(filepath.ToSlash(root)))
+	return strings.Contains(systemDirs, " "+n+" ") || n == "~" || n == "$PWD" || n == "${PWD}" || strings.Trim(n, "./") == "" || (filepath.IsAbs(n) && n == path.Clean(filepath.ToSlash(root)))
 }
 
-func secretShell(base string, args []string, rf ruleFile) bool {
+func secretShell(base string, args []string, rf ruleFile, root string) bool {
 	if base == "echo" || base == "printf" {
 		args = redirTargets(args)
 	}
+	if looksOnly(base, args) {
+		return false
+	}
 	for _, a := range args {
 		for _, c := range candidates(a) {
-			if isSecretPath(c) && !guardAllowed(rf, c) {
+			if secretOrLinked(c, root) && !guardAllowed(rf, c) {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+// looksOnly reports ls, stat or test on a path: it reads names and metadata, not
+// contents. A redirect or substitution in the arguments could still read or write.
+func looksOnly(base string, args []string) bool {
+	line := strings.Join(args, " ")
+	return (base == "ls" || base == "stat" || base == "test" || base == "[") &&
+		!strings.ContainsAny(line, "<>`") && !strings.Contains(line, "$(")
 }
 
 func selfShell(base string, toks []string, rf ruleFile) bool {
@@ -211,7 +263,7 @@ func selfShell(base string, toks []string, rf ruleFile) bool {
 
 // toolVerdict checks file tools. Secrets: any tool that names such a path,
 // including Cursor beforeReadFile. The guard's own files: write tools only.
-func toolVerdict(event string, payload map[string]any, rf ruleFile) string {
+func toolVerdict(event string, payload map[string]any, rf ruleFile, root string) string {
 	name := strings.ToLower(stringField(payload, "tool_name"))
 	if isShellTool(name) {
 		return ""
@@ -234,7 +286,7 @@ func toolVerdict(event string, payload map[string]any, rf ruleFile) string {
 		if guardAllowed(rf, p) {
 			continue
 		}
-		if isSecretPath(p) {
+		if secretOrLinked(p, root) {
 			return ruleSecretRead
 		}
 		if write && selfPath(p, remove) {
@@ -258,12 +310,18 @@ func isSecretPath(p string) bool {
 	if n == "" {
 		return false
 	}
-	for _, d := range []string{"~/.ssh", "~/.aws", "~/.config/gcloud"} {
-		if n == d || strings.HasPrefix(n, d+"/") {
+	b := strings.ToLower(path.Base(n))
+	if strings.HasSuffix(b, ".pub") {
+		return false // public keys
+	}
+	for _, seg := range strings.Split(n, "/") {
+		if seg == ".ssh" || seg == ".aws" {
 			return true
 		}
 	}
-	b := strings.ToLower(path.Base(n))
+	if n == "~/.config/gcloud" || strings.HasPrefix(n, "~/.config/gcloud/") {
+		return true
+	}
 	switch {
 	case b == ".env", b == ".npmrc", b == ".netrc":
 		return true
@@ -278,6 +336,21 @@ func isSecretPath(p string) bool {
 		return true
 	}
 	return strings.HasSuffix(b, ".pem") || strings.HasSuffix(b, ".key") || strings.HasPrefix(b, "id_rsa")
+}
+
+// secretOrLinked is isSecretPath, also for the file a symlink points to.
+func secretOrLinked(p, root string) bool {
+	if isSecretPath(p) {
+		return true
+	}
+	if h, err := os.UserHomeDir(); err == nil && strings.HasPrefix(p, "~/") {
+		p = h + p[1:]
+	}
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(root, p)
+	}
+	r, err := filepath.EvalSymlinks(p)
+	return err == nil && r != p && isSecretPath(r)
 }
 
 // selfPath reports a hook config, the rules file, or ~/.drift-guard. With
@@ -332,9 +405,13 @@ func guardAllowed(rf ruleFile, p string) bool {
 	return false
 }
 
+// substSyntax drops quotes, backticks and $( ) so cat $(echo .env) shows the path.
+var substSyntax = strings.NewReplacer("`", "", `"`, "", "'", "", "$(", "", ")", "")
+
 // candidates also tries the part after = < > @, so --file=.env, of=.env, -d @.env and
 // >.env are seen.
 func candidates(tok string) []string {
+	tok = substSyntax.Replace(tok)
 	out := []string{tok}
 	if i := strings.LastIndexAny(tok, "=<>@"); i >= 0 && i+1 < len(tok) {
 		out = append(out, tok[i+1:])
