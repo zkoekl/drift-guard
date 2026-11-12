@@ -24,11 +24,11 @@ Both render with ordinary code. Neither needs a model. Token cost is zero either
 
 ## Decision
 
-`drift-guard report` is the only viewer in the phase that introduces metrics (Phase 1). It writes one HTML file with the CSS and the chart script inlined. No CDN, no remote font, no request after the file is open. Log values are escaped. `--no-open` skips the browser. The process does not listen.
+`drift-guard report` is the only viewer. It writes one HTML file with the CSS and the chart script inlined. No CDN, no remote font, no request after the file is open. Log values are escaped. `--no-open` skips the browser. The process does not listen.
 
-`drift-guard serve` is not built in that phase. Add it only if the dogfood log shows the static file is not enough. If it is added later: start only when the user runs it, bind `127.0.0.1` only, no launch agent, no systemd unit, no hook that starts it, exit when the user stops it. It still does not phone home.
+`drift-guard serve` is not built. Add it only if the dogfood log shows the static file is not enough. If it is added later: start only when the user runs it, bind `127.0.0.1` only, no launch agent, no systemd unit, no hook that starts it, exit when the user stops it. It still does not phone home.
 
-Charts, empty states, and the label command are specified in [METRICS.md](../METRICS.md) and accepted in [PLAN.md](../PLAN.md) Phase 1.
+Charts, empty states, and the label command are specified in [METRICS.md](../METRICS.md).
 
 ## Consequences
 
@@ -39,5 +39,5 @@ Charts, empty states, and the label command are specified in [METRICS.md](../MET
 ## Alternatives
 
 - **A phone-home dashboard.** Rejected. Contradicts local-only.
-- **SQLite plus a GUI app.** Rejected for Phase 1. The HTML file is the GUI. SQLite remains an optional input, not a second product.
+- **SQLite plus a GUI app.** Rejected. The HTML file is the GUI. SQLite remains an optional input, not a second product.
 - **Always-on `serve`.** Rejected. Idle cost and a listener are what the on-demand file avoids.

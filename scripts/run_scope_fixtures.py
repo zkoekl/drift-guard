@@ -25,7 +25,7 @@ def main():
     binary = Path(os.environ.get("DRIFT_GUARD_BIN", ROOT / "bin" / "drift-guard"))
     if not binary.is_file():
         sys.exit(f"missing binary: {binary}")
-    base = ROOT / "fixtures" / "phase0" / "scope"
+    base = ROOT / "fixtures" / "scope"
     failed = False
     for name in ("violation", "clean"):
         directory = base / name

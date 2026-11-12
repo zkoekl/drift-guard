@@ -34,7 +34,7 @@ The read log is the one the prototype already keeps:
 
 `afterFileEdit` records an edit time for time-to-detect. It is not counted as a read of the canary line. An edit of the file with a correct quote is still `canary-read`.
 
-Scan does not refresh files and does not read the live rules file for this check. A transcript opts in with `canary_files` and `canary_secret`. The fixture is `fixtures/phase0/transcripts/canary-synthetic.json`. Its secret is a test vector, not a local secret.
+Scan does not refresh files and does not read the live rules file for this check. A transcript opts in with `canary_files` and `canary_secret`. The fixture is `fixtures/transcripts/canary-synthetic.json`. Its secret is a test vector, not a local secret.
 
 ## Code
 
@@ -70,17 +70,16 @@ drift-guard-canary: pending
 
 Refresh replaces that token for the session. Do not commit the session code. This tool does not restore `pending` and does not block `git commit` of the rewritten line. A protected `git push` stays denied by the existing hook.
 
-The example field list is `docs/semantic/rules.example.json`. The install snippets are `docs/phase0/install/.cursor/hooks.json` and `docs/phase0/install/.claude/settings.json`. This repo commits `.cursor/hooks.json` for dogfood. Its configured canary file is `.drift-guard/canary.md`, which is gitignored, so a refresh does not rewrite `AGENTS.md`. Do not commit a session canary code over `pending`.
+The example field list is `docs/semantic/rules.example.json`. The install snippets are `docs/hooks/install/.cursor/hooks.json` and `docs/hooks/install/.claude/settings.json`. This repo commits `.cursor/hooks.json` for dogfood. Its configured canary file is `.drift-guard/canary.md`, which is gitignored, so a refresh does not rewrite `AGENTS.md`. Do not commit a session canary code over `pending`.
 
 ## Limits
 
 These are limits of this design, not edge cases to ignore.
 
 - A valid quote means the code for this session was in the reply. It does not mean the rules were followed, understood, or even read past that one line.
-- The hook stdout does not contain the code. Anything else that can read the file can. Cursor may inject `AGENTS.md` into the prompt after refresh without a Read tool. The code check can then pass with no tool read, and the result is the disputed `canary-read` finding, not a follow-up. Whether injection happens before or after `beforeSubmitPrompt` was not verified in Cursor.
+- The hook stdout does not contain the code. Anything else that can read the file can. Cursor may inject `AGENTS.md` into the prompt after refresh without a Read tool. The code check can then pass with no tool read, and the result is the disputed `canary-read` finding, not a follow-up.
 - An agent that reads `.drift-guard/canary-secret` and recomputes the HMAC can quote a correct code without reading the rule file. The read log then disputes the finding unless the rule file was also read. The 8 hex characters are 32 bits. They are short so a reply can quote them. They are not a guess-resistance boundary.
 - If no refresh has run in this session, the file may still say `pending`. The stop hook does not follow up and does not ask the agent to quote `pending`. The first tool hook refreshes the line so a later stop can check a real code.
 - `stop` does not refresh. Refreshing there would change the code after the reply.
 - The read log is only as complete as the hooks that fired. A read that never hit `postToolUse`, a shell reader, or the transcript is invisible. The code can still match. That case is disputed, not blocking.
 - Scan of a saved transcript checks the quote and the transcript's own `reads`. It does not open the rule files on disk.
-- No live Cursor or Claude Code session was run for this check. The tests are `go test` and the local hook JSON.

@@ -24,7 +24,7 @@ The script builds `~/.drift-guard/bin/drift-guard` and the wrapper `~/.drift-gua
 
 ## Push deny
 
-The global `hooks.json` does not set `failClosed`. If the binary is broken or does not answer in time, the command is not blocked. The protected-push deny runs only for a session that is on, and only while the hook process is alive. It blocks a push to main, master, or the default branch, a force push, and a tag push. A normal push of the current feature branch is allowed. A broken hook then does not stop agents in every project. For a project where the deny must be fail-closed, install the hook from `docs/phase0/install/`, not this kit.
+The global `hooks.json` does not set `failClosed`. If the binary is broken or does not answer in time, the command is not blocked. The protected-push deny runs only for a session that is on, and only while the hook process is alive. It blocks a push to main, master, or the default branch, a force push, and a tag push. A normal push of the current feature branch is allowed. A broken hook then does not stop agents in every project. For a project where the deny must be fail-closed, install the hook from `docs/hooks/install/`, not this kit.
 
 ## Statistics
 

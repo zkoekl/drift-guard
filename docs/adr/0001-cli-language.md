@@ -5,17 +5,17 @@
 
 ## Context
 
-`drift-guard` runs inside a hook, so process start is part of the product. A plain JVM may be too slow to run on every shell call and every stop. That is measured in phase 0, not assumed. The binary has to be one file, with no extra language runtime required on Windows (Cursor runs hooks through PowerShell) or on a cloud-agent VM. The JVM itself counts as a runtime if the plain JVM build is the one that ships.
+`drift-guard` runs inside a hook, so process start is part of the product. A plain JVM may be too slow to run on every shell call and every stop. That is measured, not assumed. The binary has to be one file, with no extra language runtime required on Windows (Cursor runs hooks through PowerShell) or on a cloud-agent VM. The JVM itself counts as a runtime if the plain JVM build is the one that ships.
 
 ## Decision
 
-This ADR no longer picks a language. The candidates are Go, Java compiled with GraalVM native-image, and a plain JVM. Phase 0 prototype measures them. The bar is p95 hook latency under 50ms for a no-op check and for the trivial plan-versus-diff check, on a cold and a warm start. A plain JVM is measured in phase 0 and rejected if hook p95 >= 50 ms. The numbers are in [ADR 0005](0005-runtime-model.md) and [bench.md](../phase0/bench.md). The prototype is the Go module in this tree. No Gradle build is added.
+This ADR no longer picks a language. The candidates are Go, Java compiled with GraalVM native-image, and a plain JVM. A prototype benchmark measures them. The bar is p95 hook latency under 50ms for a no-op check and for the trivial plan-versus-diff check, on a cold and a warm start. A plain JVM is measured and rejected if hook p95 >= 50 ms. The numbers are in [ADR 0005](0005-runtime-model.md) and [bench.md](../bench.md). The prototype is the Go module in this tree. No Gradle build is added.
 
 Shell out to `git`. Do not vendor libgit2.
 
 ## Measurement (2026-11-09)
 
-`scripts/bench.py` timed a minimal hook (read stdin JSON, evaluate git-push and done-without-tests, append one JSONL line, write stdout JSON). 200 cold runs (page cache dropped before each) and 200 warm runs. Nearest-rank p50 and p95. The summary is in [bench.md](../phase0/bench.md). Raw samples are not published.
+`scripts/bench.py` timed a minimal hook (read stdin JSON, evaluate git-push and done-without-tests, append one JSONL line, write stdout JSON). 200 cold runs (page cache dropped before each) and 200 warm runs. Nearest-rank p50 and p95. The summary is in [bench.md](../bench.md). Raw samples are not published.
 
 | Build | Warm p50 ms | Warm p95 ms | Cold p50 ms | Cold p95 ms |
 | --- | --- | --- | --- | --- |

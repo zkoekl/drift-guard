@@ -30,9 +30,9 @@ If that module is not reachable, from this checkout: `go build -o "$HOME/.local/
 
 Rules and skills, for every environment that will read them: [`docs/install/README.md`](docs/install/README.md). That text is advisory.
 
-- `cursor-ide`: every local project, `sh docs/install/global/install.sh` (no `failClosed`, idle until `#dg` or a rules file). One project: copy `docs/phase0/install/.cursor/hooks.json` to `.cursor/hooks.json`. Commit that copy only when the user asked the repo to carry it. The hook denies a push to main, master, or the default branch, a force push, and a tag push. A normal push of the current feature branch is allowed. `failClosed` still applies to that hook.
+- `cursor-ide`: every local project, `sh docs/install/global/install.sh` (no `failClosed`, idle until `#dg` or a rules file). One project: copy `docs/hooks/install/.cursor/hooks.json` to `.cursor/hooks.json`. Commit that copy only when the user asked the repo to carry it. The hook denies a push to main, master, or the default branch, a force push, and a tag push. A normal push of the current feature branch is allowed. `failClosed` still applies to that hook.
 - `cursor-cli`: the same files. `--print` fires only `sessionStart`, `preToolUse`, `beforeShellExecution`, and `postToolUse`.
-- `claude-code`: copy `docs/phase0/install/.claude/settings.json` to the project's `.claude/settings.json`. A cloud Claude session does not read `~/.claude`.
+- `claude-code`: copy `docs/hooks/install/.claude/settings.json` to the project's `.claude/settings.json`. A cloud Claude session does not read `~/.claude`.
 - `cursor-cloud`: commit the project `.cursor/hooks.json`. `~/.cursor/hooks.json` is not loaded, and `sessionStart` does not run. Commit it only when `drift-guard` is already on that environment's `PATH`. A missing binary with `failClosed` on `preToolUse`/`Shell` blocks every shell command, including the install. This repo is the exception: `.cursor/hooks/drift-guard.sh` builds `./cmd/drift-guard`. Do not copy that script into another module.
 - `grok-bot`: hooks are impossible. Save `docs/install/skills/advisory-scan/SKILL.md` into the bot skill library.
 - `rules-only`: the copy in `docs/install/README.md` is the whole install.

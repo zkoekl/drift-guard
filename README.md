@@ -1,44 +1,28 @@
-# cursor-drift-guard
+# drift-guard
 
 [![CI](https://github.com/zkoekl/drift-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/zkoekl/drift-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/zkoekl/drift-guard/blob/main/LICENSE)
 
-Tested with scripted agent sessions and live Cursor CLI and cloud-agent sessions.
+AI coding agents drift. They change things nobody asked for, delete files, push to main, and say "done" without running anything. `drift-guard` is a local checker that runs from agent hooks (Cursor, Claude Code) and from CI, and stops or flags those moves. One Go binary: no daemon, no model, no telemetry.
 
-If you are an AI agent asked to connect a repo, follow [CONNECT.md](CONNECT.md).
+## What it does
 
-`drift-guard` is a local checker for an AI coding agent. It compares the diff and the session log with the plan and the rules that were written down. One Go binary, no daemon, no model, and no telemetry. Cursor hooks are the first adapter. Claude Code uses the same engine. A chat with no hooks is checked only when someone runs `drift-guard scan` on a saved transcript.
+Checks that block or ask:
 
-## Install
+- **Push guard.** Denies `git push` to main, master, or the default branch, force pushes, and tag pushes. A normal push of a feature branch goes through.
+- **Unrequested deletes.** A delete, move, or truncation of a file the latest prompt did not name returns `ask`. In a Cursor cloud agent, where nobody can answer, it returns `deny`.
+- **PR scope.** `drift-guard scope` fails when a changed file matches none of the globs declared for the change. It runs in CI and as a pre-commit hook.
+- **Tests before done.** If the rules file names a test command and a matching file changed, stopping without that command exiting 0 sends the agent a short follow-up (at most two).
 
-Download a binary for your OS from [Releases](https://github.com/zkoekl/drift-guard/releases) (Linux and macOS, amd64 and arm64; Windows amd64). Unpack it and put `drift-guard` on `PATH`.
+Checks that only log and show up in the report:
 
-Or, with Go 1.22 or later:
+- Reply in the wrong language, when a rule names one.
+- An agent that drops its answer after pushback with no new read or command in between.
+- A file path or version in the reply that the session never read.
+- A reply that shares too little with the prompt.
+- Optional (`require_markers`): answer marker lines and a per-session canary code.
 
-```sh
-go install github.com/zkoekl/drift-guard/cmd/drift-guard@latest
-```
-
-Global opt-in, for every local project, until a session turns the checks on. From a checkout of this repository:
-
-```sh
-sh docs/install/global/install.sh
-```
-
-That builds `~/.drift-guard/bin/drift-guard` and a wrapper, and writes `~/.cursor/hooks.json` when that file is empty or missing. If the file already has commands, the script stops and leaves a backup. Remove it with `sh docs/install/global/uninstall.sh`. Cloud agents do not load `~/.cursor/hooks.json`. Details: [`docs/install/global/README.md`](docs/install/global/README.md).
-
-Per project, the checks run for that project. Put `drift-guard` on `PATH`, then copy the snippet. Commit it when a Cursor cloud agent should run it. This repo already commits its own `.cursor/hooks.json`. See [CONNECT.md](CONNECT.md).
-
-```sh
-go build -o "$HOME/.local/bin/drift-guard" ./cmd/drift-guard
-mkdir -p .cursor .claude
-cp docs/phase0/install/.cursor/hooks.json .cursor/hooks.json
-cp docs/phase0/install/.claude/settings.json .claude/settings.json
-```
-
-The Cursor snippet sets `failClosed: true` on `git push`. The Claude snippet sets `onFailure` to `block`. Walkthrough: [`docs/phase0/HOWTO.md`](docs/phase0/HOWTO.md).
-
-Rule text for other projects, separate from the hooks, is [`docs/install/README.md`](docs/install/README.md).
+`drift-guard report` turns the local event log into one offline HTML file.
 
 ## Example
 
@@ -46,16 +30,60 @@ Rule text for other projects, separate from the hooks, is [`docs/install/README.
 echo '{"hook_event_name":"beforeShellExecution","command":"git push origin HEAD:main"}' | drift-guard hook
 ```
 
-The hook prints `"permission":"deny"`. A normal `git push -u origin HEAD` from a feature branch is allowed. A push to main, master, or the default branch, a force push, and a tag push are denied.
+```json
+{"agent_message":"Push the feature branch without --force. Do not push main, the default branch, or a tag.","permission":"deny","user_message":"A push to main, master, the default branch, a force push, or a tag push is denied."}
+```
+
+A prompt "Fix the typo in README.md" followed by `rm -rf src`:
+
+```json
+{"agent_message":"Deleting or replacing src was not part of the task. Ask the user before deleting it.","permission":"ask","user_message":"Deleting or replacing src was not part of the task. Ask the user before deleting it."}
+```
+
+A scope check on a change that touches CI and deploy files when only `gameplay/**` is allowed:
+
+```text
+scope violation (scope file):
+outside: .github/workflows/build.yml
+outside: deploy/Dockerfile
+```
+
+## Install
+
+Download a binary from [Releases](https://github.com/zkoekl/drift-guard/releases) (Linux and macOS, amd64 and arm64; Windows amd64), unpack it, and put `drift-guard` on `PATH`. Or, with Go 1.22 or later:
+
+```sh
+go install github.com/zkoekl/drift-guard/cmd/drift-guard@latest
+```
+
+**Global, for every local Cursor project**, idle until a session turns it on. From a checkout of this repository:
+
+```sh
+sh docs/install/global/install.sh
+```
+
+This builds `~/.drift-guard/bin/drift-guard` and a wrapper, and writes `~/.cursor/hooks.json` if that file is empty or missing. If it already has commands, the script stops and leaves a backup. `sh docs/install/global/uninstall.sh` removes it. Cloud agents do not load `~/.cursor/hooks.json`. Details: [`docs/install/global/README.md`](docs/install/global/README.md).
+
+**Per project**, always on for that project. Commit the files if a Cursor cloud agent should run them:
+
+```sh
+mkdir -p .cursor .claude
+cp docs/hooks/install/.cursor/hooks.json .cursor/hooks.json
+cp docs/hooks/install/.claude/settings.json .claude/settings.json
+```
+
+The Cursor snippet sets `failClosed: true` on `git push`; the Claude snippet sets `onFailure` to `block`. Walkthrough: [`docs/hooks/README.md`](docs/hooks/README.md). Copy-in rule text for an agent, separate from the hooks: [`docs/install/README.md`](docs/install/README.md).
 
 ## Turn the checks on
 
-The global install answers "allow" and does nothing else until the session is on. Turn it on in either of these ways:
+The global install allows everything until the session is on. Either:
 
-- Send `#dg` as its own word in the chat. Letter case does not matter. The wrapper's `DRIFT_GUARD_TAG` changes the tag.
-- Put `drift-guard.rules.json` in the project root.
+- write `#dg` as its own word in the chat (case does not matter; the wrapper's `DRIFT_GUARD_TAG` changes the tag), or
+- put `drift-guard.rules.json` in the project root. `DRIFT_GUARD_RULES` points at another path.
 
-A per-project hook file is already on for that project. The same rules file names the reply language, the test command, and, with `require_markers`, the canary files. Without it, `git push` is still denied and the language and test checks stay quiet.
+Without a rules file, the push guard still works and the language and test checks stay quiet.
+
+## Config
 
 ```json
 {
@@ -67,11 +95,7 @@ A per-project hook file is already on for that project. The same rules file name
 }
 ```
 
-`require_markers` is `false` by default. When it is `true`, a `stop` reply without non-empty `ЦЕЛЬ:`/`GOAL:`, `ИСТОЧНИК:`/`SOURCE:`, and `ДОКАЗАНО:`/`PROOF:` lines, or without the `ПРОЧИТАНО:`/`READ:` canary quote for `canary.files`, gets a short follow-up. The rules file shipped to agents does not ask for these lines. Add them to your own agent file if you turn this on.
-
-`unrequested_delete` is `ask`, `log`, or `off`. The default in an active session is `ask`. `ask` returns permission `ask` before a delete or replace the latest prompt did not request, and it does not deny the call, except in a Cursor cloud agent (`CURSOR_AGENT_WORKER_ID` or `CURSOR_WORKER_POOL_NAME`), where `ask` is ignored and the hook denies instead. `log` records the event and allows the call. `off` skips the check. When the session never received the prompt text, the event is disputed. The field list is in [`docs/METRICS.md`](docs/METRICS.md).
-
-`DRIFT_GUARD_RULES` points at another path. An example with the optional lists is [`docs/semantic/rules.example.json`](docs/semantic/rules.example.json).
+`unrequested_delete` is `ask` (the default in an active session), `log`, or `off`. `log` records the event and allows the call. When the session never saw the prompt text, the event is marked disputed. `require_markers` is `false` by default. When `true`, a `stop` reply missing the `GOAL:`, `SOURCE:`, or `PROOF:` lines, or the `READ:` canary quote for `canary.files`, gets a short follow-up. More optional fields: [`docs/semantic/rules.example.json`](docs/semantic/rules.example.json). Log fields: [`docs/METRICS.md`](docs/METRICS.md).
 
 ## Commands
 
@@ -86,26 +110,22 @@ drift-guard scope [--require-scope] [--scope-file f] [--files f|-] [--staged]
 drift-guard canary refresh --session ID [--rules f] [--root dir] [--secret-file f]
 ```
 
-`hook` reads stdin JSON and writes stdout JSON. Exit `0` is clean, exit `1` is a violation, exit `2` is a usage error. The Cursor `stop` wrapper exits `0` and returns JSON. `scan` exits `0` and writes findings to the log. `report --no-open` writes one HTML file and exits. `report --summary` prints a short count-only text summary with no paths, commands, prompts, file names, or session ids, and writes no HTML. `scope` is the pre-commit and pull-request backstop: a changed path that matches no glob fails. `canary refresh` rewrites `drift-guard-canary:` in the configured files and does not print the code.
+`hook` reads JSON on stdin and writes JSON on stdout. `check` and `scope` exit `0` when clean, `1` on a violation, `2` on a usage error. `scan` checks a saved transcript, exits `0`, and writes findings to the log. `report --summary` prints counts only, with no paths, commands, prompts, or session ids. `canary refresh` rewrites `drift-guard-canary:` in the configured files and does not print the code.
 
-Scope for a pull request is a block in the body. CI passes `--require-scope` and fails when the block is missing or a changed file matches none of the globs. See [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
+A pull request declares its scope as a block in the description. CI runs `scope --require-scope` and fails when the block is missing or a changed file matches no glob. See [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md).
 
 ## Limitations
 
-Hooks are not verified in a live Cursor session. The local tests check the JSON the hook prints.
-
-Semantic checks are weak. On a private case set, checks 2–4 together caught 3 of 24 drift cases with 0 of 12 false alarms.
-
-The canary can be forged by reading `.drift-guard/canary-secret` and recomputing the code. Each session rewrites `drift-guard-canary:` in the configured files, and those files are often tracked. A matching code means the file was in context, not that its rules were applied. See [`docs/canary/README.md`](docs/canary/README.md).
-
-Push deny is not fail-closed in the global install. The global `hooks.json` does not set `failClosed`, so a dead or slow hook does not block `git push`. The per-project snippet does set `failClosed`. Whether a killed binary still blocks the push was not verified in Cursor.
-
-The unrequested-delete check reads `rm`, `unlink`, `git rm`, `mv`, and `>` truncation. It skips globs, variables, `sudo`, `sh -c`, and deletes inside another program. A destructive verb allows only the files the latest prompt names. With no file named, the tool is allowed and the event is disputed. The skipped forms are listed in [`docs/METRICS.md`](docs/METRICS.md).
+- The checks see only what the host sends to hooks. A push made inside a script or another program is not seen.
+- The global install is fail-open: a dead or slow hook does not block `git push`. The per-project snippet is fail-closed.
+- The delete check reads `rm`, `unlink`, `git rm`, `mv`, and `>` truncation. It skips globs, variables, `sudo`, `sh -c`, and deletes inside another program. If the prompt names no file, the call is allowed and the event is disputed. Full list: [`docs/METRICS.md`](docs/METRICS.md).
+- The language, pushback, and memory checks are heuristics. They log; they do not block.
+- The canary can be forged by reading `.drift-guard/canary-secret` and recomputing the code. A matching code means the file was in context, not that its rules were applied. See [`docs/canary/README.md`](docs/canary/README.md).
 
 ## More
 
-Design: [runtime](docs/adr/0005-runtime-model.md), [plan](docs/PLAN.md), [validation](docs/VALIDATION.md), [local metrics](docs/METRICS.md). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
+Design: [runtime model](docs/adr/0005-runtime-model.md) and the other [ADRs](docs/adr/README.md). Hook latency: [`docs/bench.md`](docs/bench.md). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md). If you are an AI agent asked to connect a repo, follow [CONNECT.md](CONNECT.md).
 
 ## License
 
-[MIT](https://github.com/zkoekl/drift-guard/blob/main/LICENSE)
+[MIT](LICENSE)

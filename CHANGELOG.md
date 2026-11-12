@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- README rewritten around what the tool does, with real example output. Title is `drift-guard`.
+- Docs moved out of internal-sounding paths: `docs/phase0/install` to `docs/hooks/install`, `docs/phase0/HOWTO.md` to `docs/hooks/README.md`, `docs/phase0/bench.md` to `docs/bench.md`, `fixtures/phase0/*` to `fixtures/*`, `docs/semantic/RESULTS.md` to `docs/semantic/README.md`.
+- `internal/drift/hook.go` split into `hook_*.go` files by topic. No behavior change.
+- ADRs, `docs/METRICS.md`, and agent docs no longer refer to project phases.
+
+### Removed
+
+- `docs/PLAN.md`, `docs/VALIDATION.md`, `docs/phase0/STOP.md`, `docs/phase0/cloud-agent-hooks.md`, and `scripts/stop_experiment.sh` (working notes and a one-off experiment), plus the CI step that ran the script.
+
 - `docs/agent-behavior/RULES.md` is marker-free: 17 lines, about 400 tokens, down from 27 lines and about 820 tokens. It no longer asks the agent for `ЦЕЛЬ:`/`ИСТОЧНИК:`/`ДОКАЗАНО:` lines or a canary quote.
 - The missing-marker follow-up and the stop-time canary check are off by default. The rules file setting `"require_markers": true` turns both back on, and also canary refresh on hooks. The `check`/`scan` input accepts the same field.
 
@@ -28,10 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Module path `github.com/zkoekl/drift-guard`. Install with `go install github.com/zkoekl/drift-guard/cmd/drift-guard@latest`.
 - Opt-in global Cursor hooks under `docs/install/global/`. Until a session is turned on, the hook allows the command and does not deny `git push`.
 - Installable anti-drift rules for coding agents (`docs/agent-behavior/RULES.md`, copies under `docs/install/`, three on-demand skills). `ДОПУЩЕНИЕ` / `ASSUMPTION` is an optional marker. The canary line is checked: the reply quotes it as `ПРОЧИТАНО:` or `READ:`.
-- Implementation plan, validation protocol, local metrics, and ADRs. The private case set is not published in this tree.
+- Local metrics doc and ADRs.
 - Deterministic semantic checks on scan and stop: answer markers, request anchors, flip after pushback, and a path or version stated without a read. Disputed hits stay in the log. A missing marker may follow up. No model.
 - Deterministic canary check. `canary.files` lists rule files. `drift-guard canary refresh`, also run from `sessionStart` and `beforeSubmitPrompt`, rewrites `drift-guard-canary:` with a per-session HMAC and does not print the code. The reply quotes it as `ПРОЧИТАНО:` or `READ:`. A missing or stale code may follow up, using the same cap of two. A matching code with no read in the session log is disputed. A match means the file was in context this session, not that its rules were applied. See `docs/canary/README.md`.
-- The runtime model is a single fast binary, two channels (code and conversation), and four layers. No daemon. Phases 0–2 use no model. The latency measurement is `docs/phase0/bench.md`. The prototype stays on Go.
+- The runtime model is a single fast binary, two channels (code and conversation), and four layers. No daemon. The default checks use no model. The latency measurement is `docs/bench.md`. The prototype stays on Go.
 - Repository health files: license, contributing guide, code of conduct, security policy, issue templates.
 
 [Unreleased]: https://github.com/zkoekl/drift-guard/compare/v0.0.1-alpha...HEAD

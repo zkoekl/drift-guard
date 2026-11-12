@@ -10,7 +10,7 @@ New misses should become checks or fixtures. If the agent that just failed is al
 ## Decision
 
 1. `drift-guard propose` may write a proposal: a markdown file and a candidate rule snippet under `proposals/`, plus a fixture. It replays the fixture suite before writing.
-2. Before the file is written, the fixture suite runs against the **previous** fixture set. Recall must not fall. False positives must not rise. The threshold is zero regression ([VALIDATION.md](../VALIDATION.md)).
+2. Before the file is written, the fixture suite runs against the **previous** fixture set. Recall must not fall. False positives must not rise. The threshold is zero regression.
 3. If that fails, do not write a proposal and do not open a pull request. Append `proposal_rejected_by_suite` to the local log.
 4. If it passes, the file is an offer, not a change to the live rules. The tool may `git add` only paths under `proposals/`, and only when the user passed `--stage`. It must not `git commit`, `git merge`, or `git push`. It has no remote helper.
 5. `drift-guard apply <id>` edits the live rules only after the operator types that id on a TTY. It refuses a pipe, a non-TTY, and `CI`. The owner pushes the result themselves, from their own machine, as a normal commit.

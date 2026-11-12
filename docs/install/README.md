@@ -22,6 +22,6 @@ cp docs/install/AGENTS.md AGENTS.md
 cp docs/install/CLAUDE.md CLAUDE.md
 ```
 
-The Cursor file sets `alwaysApply: true`. The skills load when a task matches their description. `advisory-scan` is for an agent with no hook. Copying it does not install one. Hooks stay a separate install: [`docs/phase0/install/`](../phase0/install/).
+The Cursor file sets `alwaysApply: true`. The skills load when a task matches their description. `advisory-scan` is for an agent with no hook. Copying it does not install one. Hooks stay a separate install: [`docs/hooks/install/`](../hooks/install/).
 
 How the rules relate to the checks is [`docs/agent-behavior/README.md`](../agent-behavior/README.md).
