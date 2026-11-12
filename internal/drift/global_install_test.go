@@ -106,7 +106,7 @@ func TestGlobalInstallScripts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(hooks), wrapper) || strings.Contains(strings.ToLower(string(hooks)), "failclosed") {
+	if !strings.Contains(string(hooks), wrapper) || strings.Count(string(hooks), `"failClosed": true`) != 4 {
 		t.Fatalf("hooks.json:\n%s", hooks)
 	}
 	if !strings.Contains(string(hooks), `"loop_limit": 3`) {
@@ -260,7 +260,7 @@ func TestGlobalInstallScripts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(strings.ToLower(string(merged)), "failclosed") || !strings.Contains(string(merged), "drift-guard-hook") {
+	if !strings.Contains(string(merged), `"failClosed": true`) || !strings.Contains(string(merged), "drift-guard-hook") {
 		t.Fatalf("merged hooks:\n%s", merged)
 	}
 	trivialBackup, err := os.ReadFile(filepath.Join(trivialHome, ".cursor", "hooks.json.drift-guard-backup"))

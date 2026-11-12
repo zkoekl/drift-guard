@@ -36,7 +36,7 @@ mkdir -p .claude
 cp docs/hooks/install/.claude/settings.json .claude/settings.json
 ```
 
-The Cursor snippet attaches `drift-guard hook` to `sessionStart`, `beforeSubmitPrompt`, `beforeShellExecution`, `preToolUse` (Shell), `postToolUse`, `afterAgentResponse`, and `stop` (`loop_limit` 3). `git push` has `failClosed: true`. Claude sets `onFailure` to `"block"` on `PreToolUse`/`Bash`. The same files include `SessionStart` and `UserPromptSubmit`: they rewrite the canary line and do not print the code.
+The Cursor snippet attaches `drift-guard hook` to `sessionStart`, `beforeSubmitPrompt`, `beforeShellExecution`, `preToolUse` (Shell), `postToolUse`, `afterAgentResponse`, and `stop` (`loop_limit` 3). The hooks that can deny (`beforeShellExecution`, `preToolUse`, `beforeReadFile`) have `failClosed: true`. Claude sets `onFailure` to `"block"` on every `PreToolUse` entry (needs Claude Code v2.1.295 or later, per its hooks docs). The same files include `SessionStart` and `UserPromptSubmit`: they rewrite the canary line and do not print the code.
 
 Until the binary is on `PATH`, Shell calls and `git push` are blocked. Run the two commands above first. To turn the hooks off, delete the copied JSON.
 
@@ -68,7 +68,7 @@ On `stop`, the dump has a `transcript` object:
 
 ## git push
 
-`beforeShellExecution` and `preToolUse`/`PreToolUse` for a shell do not let the command run when it pushes main, master, the default branch, a tag, or uses `--force` (including after `&&` and inside `sh -c`). A normal push of the current feature branch is allowed. `echo "git push"` is not blocked. If the binary crashes, `failClosed` (Cursor) or `onFailure: block` (Claude) blocks the push.
+`beforeShellExecution` and `preToolUse`/`PreToolUse` for a shell do not let the command run when it pushes main, master, the default branch, a tag, or uses `--force` (including after `&&` and inside `sh -c`). A normal push of the current feature branch is allowed. `echo "git push"` is not blocked. If the binary crashes or is missing, `failClosed` (Cursor) or `onFailure: block` (Claude) blocks the call, not only the push.
 
 ## Report and scan
 

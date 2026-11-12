@@ -75,7 +75,7 @@ cp docs/hooks/install/.cursor/hooks.json .cursor/hooks.json
 cp docs/hooks/install/.claude/settings.json .claude/settings.json
 ```
 
-The Cursor snippet sets `failClosed: true` on `git push`; the Claude snippet sets `onFailure` to `block`. Walkthrough: [`docs/hooks/README.md`](docs/hooks/README.md). Copy-in rule text for an agent, separate from the hooks: [`docs/install/README.md`](docs/install/README.md).
+The Cursor snippet sets `failClosed: true` on the hooks that can deny (`beforeShellExecution`, `preToolUse`, `beforeReadFile`); the Claude snippet sets `onFailure` to `block` on `PreToolUse`. A crashed or missing hook then blocks the call instead of allowing it. Walkthrough: [`docs/hooks/README.md`](docs/hooks/README.md). Copy-in rule text for an agent, separate from the hooks: [`docs/install/README.md`](docs/install/README.md).
 
 ## Turn the checks on
 

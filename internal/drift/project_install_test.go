@@ -68,6 +68,13 @@ func TestDogfoodProjectInstall(t *testing.T) {
 	if !shellClosed {
 		t.Fatal("preToolUse Shell is not failClosed")
 	}
+	for _, ev := range []string{"beforeShellExecution", "preToolUse", "beforeReadFile"} {
+		for _, e := range doc.Hooks[ev] {
+			if !e.FailClosed {
+				t.Fatalf("%s entry %q is not failClosed", ev, e.Matcher)
+			}
+		}
+	}
 	if doc.Hooks["stop"][0].LoopLimit == nil || *doc.Hooks["stop"][0].LoopLimit != 3 {
 		t.Fatalf("stop loop_limit %#v", doc.Hooks["stop"][0].LoopLimit)
 	}
@@ -92,7 +99,7 @@ func TestDogfoodProjectInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(claudeRaw), "${CLAUDE_PROJECT_DIR}/.cursor/hooks/drift-guard.sh") ||
-		!strings.Contains(string(claudeRaw), `"onFailure": "block"`) {
+		strings.Count(string(claudeRaw), `"onFailure": "block"`) != 2 {
 		t.Fatalf("claude settings:\n%s", claudeRaw)
 	}
 

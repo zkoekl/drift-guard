@@ -103,14 +103,14 @@ cat > "$tmp" <<EOF
   "version": 1,
   "hooks": {
     "beforeShellExecution": [
-      { "command": "$cmd_json", "timeout": 10 }
+      { "command": "$cmd_json", "timeout": 10, "failClosed": true }
     ],
     "preToolUse": [
-      { "command": "$cmd_json", "timeout": 10, "matcher": "Shell" },
-      { "command": "$cmd_json", "timeout": 10, "matcher": "Read|Write|StrReplace|Delete|Grep" }
+      { "command": "$cmd_json", "timeout": 10, "failClosed": true, "matcher": "Shell" },
+      { "command": "$cmd_json", "timeout": 10, "failClosed": true, "matcher": "Read|Write|StrReplace|Delete|Grep" }
     ],
     "beforeReadFile": [
-      { "command": "$cmd_json", "timeout": 10 }
+      { "command": "$cmd_json", "timeout": 10, "failClosed": true }
     ],
     "postToolUse": [
       { "command": "$cmd_json", "timeout": 10 }
