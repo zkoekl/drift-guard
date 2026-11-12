@@ -11,6 +11,17 @@
             "onFailure": "block"
           }
         ]
+      },
+      {
+        "matcher": "Read|Write|Edit|MultiEdit|NotebookEdit|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.cursor/hooks/drift-guard.sh",
+            "timeout": 30,
+            "onFailure": "block"
+          }
+        ]
       }
     ],
     "PostToolUse": [

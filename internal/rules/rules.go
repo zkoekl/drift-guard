@@ -41,6 +41,11 @@ func splitTop(command string) []string {
 		c := command[i]
 		if quote != 0 {
 			b.WriteByte(c)
+			if c == '\\' && quote == '"' && i+1 < len(command) { // \" does not close
+				i++
+				b.WriteByte(command[i])
+				continue
+			}
 			if c == quote {
 				quote = 0
 			}
@@ -93,16 +98,17 @@ func tokenize(seg string) []string {
 	for i := 0; i < len(seg); i++ {
 		c := seg[i]
 		if quote != 0 {
-			if c == quote {
+			if c == '\\' && quote == '"' && i+1 < len(seg) {
+				i++
+				b.WriteByte(seg[i])
+			} else if c == quote {
 				quote = 0
-				flush()
 			} else {
 				b.WriteByte(c)
 			}
 			continue
 		}
 		if c == '\'' || c == '"' {
-			flush()
 			quote = c
 			continue
 		}

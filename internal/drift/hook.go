@@ -67,6 +67,7 @@ type ruleFile struct {
 	UnrequestedDelete string   `json:"unrequested_delete"`
 	TestCommand       string   `json:"test_command"`
 	TestPathGlobs     []string `json:"test_path_globs"`
+	GuardAllow        []string `json:"guard_allow"`
 	RequireMarkers    bool     `json:"require_markers"`
 	Markers           struct {
 		Goal       []string `json:"goal"`
@@ -168,6 +169,9 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 		st := inspectTranscript(stringField(payload, "transcript_path"), assistant)
 		transcript = &st
 	}
+	if event == "beforeReadFile" {
+		delete(redacted, "content") // the whole file, possibly a secret
+	}
 	_ = writeDump(p, dumpLine{TS: stamp(now), Event: event, Payload: redacted, Transcript: transcript})
 	if isPromptEvent(event) {
 		notePrompt(&state, payload, semanticFromRules(ruleset))
@@ -186,6 +190,18 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 	elapsed := time.Since(start).Milliseconds()
 	if elapsed < 0 {
 		elapsed = 0
+	}
+
+	if isBefore(event) {
+		if id := guardVerdict(event, payload, ruleset, p.Root); id != "" {
+			source := "hook-tool"
+			if _, ok := shellCommand(event, payload); ok {
+				source = "hook-shell"
+			}
+			logGuard(p, sid, source, id, now, elapsed)
+			msg := guardMessages[id]
+			return denyPermissionJSON(event, msg, msg), 0
+		}
 	}
 
 	if cmd, ok := shellCommand(event, payload); ok && isBefore(event) && rules.PushDenied(cmd, gitPushContext(p.Root)) {
@@ -425,7 +441,7 @@ func isStop(event string) bool {
 
 func isBefore(event string) bool {
 	switch event {
-	case "beforeShellExecution", "preToolUse", "PreToolUse":
+	case "beforeShellExecution", "beforeReadFile", "preToolUse", "PreToolUse":
 		return true
 	default:
 		return false

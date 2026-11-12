@@ -22,6 +22,7 @@ func TestIsGitPush(t *testing.T) {
 		"git pull | git push",
 		`sh -c "git push"`,
 		"bash -lc 'git push origin'",
+		`bash -c "echo \"x\"; git push"`,
 	}
 	no := []string{
 		"",
@@ -31,6 +32,7 @@ func TestIsGitPush(t *testing.T) {
 		"echo git push",
 		"echo \"git push\"",
 		"notgit push",
+		`git commit -m "say \"git push\" later"`,
 	}
 	for _, c := range yes {
 		if !IsGitPush(c) {

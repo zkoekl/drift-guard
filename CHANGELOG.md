@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Three deny checks that run beside the push guard on `beforeShellExecution`, `preToolUse`, `PreToolUse`, and now `beforeReadFile`. Destructive commands (`git reset --hard`, `git clean -f`, whole-tree `git checkout`/`restore`, `git stash drop`/`clear`, `rm -r` on the root, home, repo root, `.`, `..` or `*`, a download piped into a shell). Secrets (`.env`, `.env.*` except `.example`/`.sample`/`.template`, `~/.ssh`, `~/.aws`, `~/.config/gcloud`, `*.pem`, `*.key`, `id_rsa*`, `.npmrc`, `.netrc`) in shell commands and file tools. Guard the guard (`.cursor/hooks.json`, `.claude/settings*.json`, `drift-guard.rules.json`, `~/.cursor/hooks.json`, `~/.drift-guard/`) against edit, delete, and move. Rule ids `destructive-command`, `secret-access`, `guard-tamper`. In an inactive global session they allow, as before. `guard_allow` in the rules file lets listed paths through the last two.
+- The hook templates and the global installer also match the file tools and `beforeReadFile`. The hook dump drops the `content` of a `beforeReadFile` payload.
+
+- Blocking hooks fail closed in every install template and in `docs/install/global/install.sh`: Cursor `failClosed: true`, Claude Code `onFailure: "block"` (Claude Code 2.1.295 or later). The global installer used to be fail-open.
+- Destructive and secrets checks also read `xargs`, inline code after `python -c`/`perl -e`/`ruby -e`/`node -e`, `$(...)` and backticks, quote fragments, backslash-escaped quotes, a literal variable assignment, symlinks to a secrets file, `.ssh`/`.aws` as path segments, `git checkout -f`, `git reset --merge`, a download piped into a bare interpreter, and `rm -r` on top-level system directories.
+- README Limitations lists what stays open and says the checks guard against honest mistakes, not a sandbox.
+
 ### Changed
+
+- The unrequested-delete check returns `deny` instead of `ask` on Cursor `preToolUse` and `beforeReadFile`, which do not enforce `ask`. `beforeShellExecution` and Claude Code keep `ask`. A `Shell` call at `preToolUse` is left to `beforeShellExecution` for the same command.
+- `*.pub` files are no longer treated as secrets. `ls`, `stat`, and `test` on a secrets file are allowed.
 
 - README rewritten around what the tool does, with real example output. Title is `drift-guard`.
 - Docs moved out of internal-sounding paths: `docs/phase0/install` to `docs/hooks/install`, `docs/phase0/HOWTO.md` to `docs/hooks/README.md`, `docs/phase0/bench.md` to `docs/bench.md`, `fixtures/phase0/*` to `fixtures/*`, `docs/semantic/RESULTS.md` to `docs/semantic/README.md`.

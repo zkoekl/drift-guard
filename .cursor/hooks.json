@@ -4,7 +4,8 @@
     "beforeShellExecution": [
       {
         "command": ".cursor/hooks/drift-guard.sh",
-        "timeout": 30
+        "timeout": 30,
+        "failClosed": true
       },
       {
         "command": ".cursor/hooks/drift-guard.sh",
@@ -19,6 +20,19 @@
         "timeout": 30,
         "failClosed": true,
         "matcher": "Shell"
+      },
+      {
+        "command": ".cursor/hooks/drift-guard.sh",
+        "timeout": 30,
+        "failClosed": true,
+        "matcher": "Read|Write|StrReplace|Delete|Grep"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".cursor/hooks/drift-guard.sh",
+        "timeout": 30,
+        "failClosed": true
       }
     ],
     "postToolUse": [

@@ -86,6 +86,8 @@ func guardUnrequestedDelete(event string, payload map[string]any, state *session
 	mode := unrequestedDeleteMode(rf)
 	vague := state.PromptSeen && state.Vague
 	cloud := cursorCloudAgent()
+	noAsk := cursorIgnoresAsk(event)
+	deferred := noAsk && isShellTool(stringField(payload, "tool_name"))
 	var askPaths []string
 	for _, op := range selectUnrequested(ops, state.Created, p.Root, nil) {
 		action, disputed := deletionAction(prompt, state.PromptSeen, op.Path)
@@ -95,12 +97,14 @@ func guardUnrequestedDelete(event string, payload map[string]any, state *session
 		evMode := mode
 		if action == actLog {
 			evMode = "log"
-		} else if action == actAsk && mode == "ask" && cloud {
+		} else if action == actAsk && mode == "ask" && (cloud || noAsk) {
 			evMode = "deny"
 		}
 		reason := deleteReason(op.Path, vague && action == actAsk, disputed, action == actLog)
-		if evMode == "deny" {
+		if evMode == "deny" && cloud {
 			reason += "; cursor cloud agent cannot honor ask"
+		} else if evMode == "deny" {
+			reason += "; cursor " + event + " cannot honor ask"
 		}
 		_ = AppendJSONL(p.Log, unrequestedDeleteEvent{
 			TS: stamp(now), Kind: kindUnrequestedDelete, SessionID: sid, Source: event,
@@ -120,7 +124,18 @@ func guardUnrequestedDelete(event string, payload map[string]any, state *session
 	if cloud {
 		return deleteCloudDenyMessage(askPaths, vague, lang), true
 	}
-	return deleteAskMessage(askPaths, vague, lang), false
+	if deferred {
+		return "", false // beforeShellExecution asks for the same command
+	}
+	return deleteAskMessage(askPaths, vague, lang), noAsk
+}
+
+// cursorIgnoresAsk reports a Cursor event whose docs do not enforce "ask":
+// preToolUse accepts it in the schema but does not act on it, and
+// beforeReadFile only takes allow or deny. beforeShellExecution and Claude
+// Code's PreToolUse do enforce it.
+func cursorIgnoresAsk(event string) bool {
+	return event == "preToolUse" || event == "beforeReadFile"
 }
 
 // cursorCloudAgent reports a Cursor cloud or worker VM, not the local CLI.
