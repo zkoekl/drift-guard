@@ -106,7 +106,11 @@ cat > "$tmp" <<EOF
       { "command": "$cmd_json", "timeout": 10 }
     ],
     "preToolUse": [
-      { "command": "$cmd_json", "timeout": 10, "matcher": "Shell" }
+      { "command": "$cmd_json", "timeout": 10, "matcher": "Shell" },
+      { "command": "$cmd_json", "timeout": 10, "matcher": "Read|Write|StrReplace|Delete|Grep" }
+    ],
+    "beforeReadFile": [
+      { "command": "$cmd_json", "timeout": 10 }
     ],
     "postToolUse": [
       { "command": "$cmd_json", "timeout": 10 }

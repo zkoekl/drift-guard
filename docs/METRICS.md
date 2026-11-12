@@ -20,11 +20,11 @@ Common fields: `ts` (RFC3339 UTC), `kind`, `session_id`.
 
 | Field | Meaning |
 | --- | --- |
-| `source` | `cli`, `hook-stop`, `hook-edit`, `ci`, `scan`, or `probe` |
+| `source` | `cli`, `hook-stop`, `hook-edit`, `hook-shell`, `hook-tool`, `ci`, `scan`, or `probe` |
 | `channel` | `code` or `conversation` |
 | `mode` | `block` or `log` |
 | `violations` | Count. |
-| `rule_ids` | Ids that fired. |
+| `rule_ids` | Ids that fired. Hook denials write one verdict (`hook-shell` or `hook-tool`, mode `block`) with `git-push`, `destructive-command`, `secret-access`, or `guard-tamper`, and no path or command. |
 | `elapsed_ms` | Checker runtime. |
 | `time_to_detect_ms` | From the first `hook-edit` note for a path that later failed, to this verdict. `null` if that note does not exist. Do not substitute "CI job duration". |
 | `tokens_judge` | Always `0`. No model runs. |

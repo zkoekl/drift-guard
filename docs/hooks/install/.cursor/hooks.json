@@ -19,6 +19,17 @@
         "timeout": 10,
         "failClosed": true,
         "matcher": "Shell"
+      },
+      {
+        "command": "drift-guard hook",
+        "timeout": 10,
+        "matcher": "Read|Write|StrReplace|Delete|Grep"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "drift-guard hook",
+        "timeout": 10
       }
     ],
     "postToolUse": [

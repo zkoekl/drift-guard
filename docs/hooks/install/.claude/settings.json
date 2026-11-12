@@ -11,6 +11,16 @@
             "onFailure": "block"
           }
         ]
+      },
+      {
+        "matcher": "Read|Write|Edit|MultiEdit|NotebookEdit|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "drift-guard hook",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PostToolUse": [

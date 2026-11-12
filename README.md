@@ -10,6 +10,9 @@ AI coding agents drift. They change things nobody asked for, delete files, push 
 Checks that block or ask:
 
 - **Push guard.** Denies `git push` to main, master, or the default branch, force pushes, and tag pushes. A normal push of a feature branch goes through.
+- **Destructive commands.** Denies `git reset --hard`, `git clean -f`, `git checkout .` and `git restore .`, `git stash drop` and `clear`, `rm -r` on `/`, `~`, `.`, `..`, `*` or the repo root, and a download piped into a shell (`curl ... | sh`).
+- **Secrets.** Denies reading or writing `.env` and `.env.*` (not `.env.example`, `.sample`, `.template`), `~/.ssh`, `~/.aws`, `~/.config/gcloud`, `*.pem`, `*.key`, `id_rsa*`, `.npmrc`, and `.netrc`, in shell commands and in the file tools of Cursor and Claude Code.
+- **Guard the guard.** Denies an agent editing, deleting, or moving `.cursor/hooks.json`, `.claude/settings.json`, `.claude/settings.local.json`, `drift-guard.rules.json`, or `~/.drift-guard/`.
 - **Unrequested deletes.** A delete, move, or truncation of a file the latest prompt did not name returns `ask`. In a Cursor cloud agent, where nobody can answer, it returns `deny`.
 - **PR scope.** `drift-guard scope` fails when a changed file matches none of the globs declared for the change. It runs in CI and as a pre-commit hook.
 - **Tests before done.** If the rules file names a test command and a matching file changed, stopping without that command exiting 0 sends the agent a short follow-up (at most two).
@@ -81,7 +84,7 @@ The global install allows everything until the session is on. Either:
 - write `#dg` as its own word in the chat (case does not matter; the wrapper's `DRIFT_GUARD_TAG` changes the tag), or
 - put `drift-guard.rules.json` in the project root. `DRIFT_GUARD_RULES` points at another path.
 
-Without a rules file, the push guard still works and the language and test checks stay quiet.
+Without a rules file, the push, destructive-command, secrets, and guard-the-guard checks still work and the language and test checks stay quiet.
 
 ## Config
 
@@ -91,11 +94,12 @@ Without a rules file, the push guard still works and the language and test check
   "unrequested_delete": "ask",
   "test_command": "go test ./...",
   "test_path_globs": ["**/*.go"],
-  "canary": { "files": ["AGENTS.md"] }
+  "canary": { "files": ["AGENTS.md"] },
+  "guard_allow": [".env.test"]
 }
 ```
 
-`unrequested_delete` is `ask` (the default in an active session), `log`, or `off`. `log` records the event and allows the call. When the session never saw the prompt text, the event is marked disputed. `require_markers` is `false` by default. When `true`, a `stop` reply missing the `GOAL:`, `SOURCE:`, or `PROOF:` lines, or the `READ:` canary quote for `canary.files`, gets a short follow-up. More optional fields: [`docs/semantic/rules.example.json`](docs/semantic/rules.example.json). Log fields: [`docs/METRICS.md`](docs/METRICS.md).
+`unrequested_delete` is `ask` (the default in an active session), `log`, or `off`. `log` records the event and allows the call. When the session never saw the prompt text, the event is marked disputed. `guard_allow` lists paths or file names (globs) that the secrets and guard-the-guard checks let through. `require_markers` is `false` by default. When `true`, a `stop` reply missing the `GOAL:`, `SOURCE:`, or `PROOF:` lines, or the `READ:` canary quote for `canary.files`, gets a short follow-up. More optional fields: [`docs/semantic/rules.example.json`](docs/semantic/rules.example.json). Log fields: [`docs/METRICS.md`](docs/METRICS.md).
 
 ## Commands
 
@@ -119,6 +123,8 @@ A pull request declares its scope as a block in the description. CI runs `scope 
 - The checks see only what the host sends to hooks. A push made inside a script or another program is not seen.
 - The global install is fail-open: a dead or slow hook does not block `git push`. The per-project snippet is fail-closed.
 - The delete check reads `rm`, `unlink`, `git rm`, `mv`, and `>` truncation. It skips globs, variables, `sudo`, `sh -c`, and deletes inside another program. If the prompt names no file, the call is allowed and the event is disputed. Full list: [`docs/METRICS.md`](docs/METRICS.md).
+- The destructive, secrets, and guard-the-guard checks read command words and tool paths. They do not see a script, an interpreter (`python -c`), `xargs`, `find -exec`, a path built from a variable, a symlink, or a `cd` into another directory. They match `git` and `rm` by name, so an alias or a wrapper script slips through. `ls .env` and `grep ... .env` are denied too: any argument that names a secrets file counts.
+- File-tool checks need the hook matchers from `docs/hooks/install` (`Read`, `Write`, `StrReplace`, `Delete`, `Grep`, and Cursor `beforeReadFile`; for Claude Code `Read`, `Write`, `Edit`, `MultiEdit`, `NotebookEdit`, `Grep`). A patch-style edit tool that carries paths only inside its patch text is not read.
 - The language, pushback, and memory checks are heuristics. They log; they do not block.
 - The canary can be forged by reading `.drift-guard/canary-secret` and recomputing the code. A matching code means the file was in context, not that its rules were applied. See [`docs/canary/README.md`](docs/canary/README.md).
 

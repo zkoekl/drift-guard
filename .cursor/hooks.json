@@ -19,6 +19,17 @@
         "timeout": 30,
         "failClosed": true,
         "matcher": "Shell"
+      },
+      {
+        "command": ".cursor/hooks/drift-guard.sh",
+        "timeout": 30,
+        "matcher": "Read|Write|StrReplace|Delete|Grep"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".cursor/hooks/drift-guard.sh",
+        "timeout": 30
       }
     ],
     "postToolUse": [
