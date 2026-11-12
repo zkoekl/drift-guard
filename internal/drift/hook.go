@@ -69,6 +69,7 @@ type ruleFile struct {
 	UnrequestedDelete string   `json:"unrequested_delete"`
 	TestCommand       string   `json:"test_command"`
 	TestPathGlobs     []string `json:"test_path_globs"`
+	RequireMarkers    bool     `json:"require_markers"`
 	Markers           struct {
 		Goal       []string `json:"goal"`
 		Source     []string `json:"source"`
@@ -251,7 +252,7 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 		Prev:     state.PrevAssistant,
 		User:     state.UserText,
 	})...)
-	if len(ruleset.Canary.Files) > 0 {
+	if ruleset.RequireMarkers && len(ruleset.Canary.Files) > 0 {
 		secret, err := loadOrCreateSecret(secretPath(p))
 		if err != nil {
 			secret = ""
@@ -295,6 +296,7 @@ func Handle(raw []byte, p Paths, now time.Time) ([]byte, int) {
 
 func semanticFromRules(rf ruleFile) SemanticConfig {
 	cfg := DefaultSemantic()
+	cfg.RequireMarkers = rf.RequireMarkers
 	if len(rf.Markers.Goal) > 0 {
 		cfg.Goal = rf.Markers.Goal
 	}

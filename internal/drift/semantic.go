@@ -16,9 +16,11 @@ type SemanticConfig struct {
 	Source     []string
 	Proof      []string
 	Assumption []string
-	AnchorMin  int
-	Pushback   []string
-	Agreement  []string
+	// RequireMarkers turns on the missing-marker follow-up. Off by default.
+	RequireMarkers bool
+	AnchorMin      int
+	Pushback       []string
+	Agreement      []string
 }
 
 // DefaultSemantic is the built-in marker names, phrase lists, and anchor minimum.
@@ -81,7 +83,7 @@ func Semantic(in SemanticInput) []Finding {
 	cfg := fillSemantic(in.Config)
 	text := in.Text
 	var out []Finding
-	if missing := missingMarkers(text, cfg); len(missing) > 0 {
+	if missing := missingMarkers(text, cfg); cfg.RequireMarkers && len(missing) > 0 {
 		out = append(out, Finding{
 			ID:       "answer-markers",
 			Channel:  "conversation",

@@ -2,7 +2,7 @@
 
 A canary proves that a required rule file was in context in **this** session. It does not prove that the agent applied the rules in that file.
 
-The check is deterministic. It does not call a model, and it does not run a daemon.
+The canary is off unless the rules file sets `"require_markers": true` and lists `canary.files`. The check is deterministic. It does not call a model, and it does not run a daemon.
 
 ## Approach
 

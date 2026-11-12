@@ -139,6 +139,12 @@ func TestSycophancyPhrasesAndReversal(t *testing.T) {
 func TestStopMarkerFollowupAndDisputed(t *testing.T) {
 	p := testPaths(t)
 	bare := "This reply is long enough to be a final answer and it cites nothing."
+	if def := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"default-off","text":`+jsonString(bare)+`}`); def["followup_message"] != nil {
+		t.Fatalf("markers are off by default: %#v", def)
+	}
+	if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	first := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"markers","text":`+jsonString(bare)+`}`)
 	msg, _ := first["followup_message"].(string)
 	if !strings.Contains(msg, "ЦЕЛЬ:") || !strings.Contains(msg, "ИСТОЧНИК:") || !strings.Contains(msg, "ДОКАЗАНО:") {
@@ -247,11 +253,23 @@ func TestScanDisputedDoesNotBlock(t *testing.T) {
 	if res.Exit != 0 {
 		t.Fatalf("scan exit %d", res.Exit)
 	}
-	if strings.Join(res.RuleIDs, ",") != "answer-markers,anchor-miss,answered-from-memory" {
+	if strings.Join(res.RuleIDs, ",") != "anchor-miss,answered-from-memory" {
 		t.Fatalf("rules %v", res.RuleIDs)
 	}
 	if strings.Join(res.DisputedIDs, ",") != "anchor-miss,answered-from-memory" {
 		t.Fatalf("disputed %v", res.DisputedIDs)
+	}
+}
+
+func TestScanRequireMarkers(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/t.json"
+	if err := os.WriteFile(path, []byte(`{"origin":"synthetic","session_id":"rm","require_markers":true,"assistant_text":"plain reply"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := ScanFile(path, dir+"/events.jsonl", time.Now().UTC())
+	if err != nil || strings.Join(res.RuleIDs, ",") != "answer-markers" {
+		t.Fatalf("rules %v err %v", res.RuleIDs, err)
 	}
 }
 

@@ -254,8 +254,8 @@ func TestOptInTagAndProjectActivation(t *testing.T) {
 		t.Fatalf("active push: %#v", deny)
 	}
 	bare := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"tag1","text":"This reply is long enough to be a final answer and it cites nothing."}`)
-	if bare["followup_message"] == "" || bare["followup_message"] == nil {
-		t.Fatalf("active stop should follow current marker behavior: %#v", bare)
+	if bare["followup_message"] != nil {
+		t.Fatalf("active stop must not ask for markers by default: %#v", bare)
 	}
 
 	// A near-miss tag does not activate.
@@ -405,7 +405,7 @@ func TestOptInGlobalModeWritesNothingInProject(t *testing.T) {
 		Root:  t.TempDir(),
 		Rules: filepath.Join(canaryRoot, "drift-guard.rules.json"),
 	}
-	rules := `{"canary":{"files":["AGENTS.md"]}}`
+	rules := `{"require_markers":true,"canary":{"files":["AGENTS.md"]}}`
 	if err := os.WriteFile(filepath.Join(canaryRoot, "drift-guard.rules.json"), []byte(rules), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -483,7 +483,7 @@ func TestOptInProjectRulesSurviveLaterEvents(t *testing.T) {
 	enableOptIn(t)
 	proj := t.TempDir()
 	outside := t.TempDir()
-	if err := os.WriteFile(filepath.Join(proj, "drift-guard.rules.json"), []byte(`{"reply_language":"ru"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(proj, "drift-guard.rules.json"), []byte(`{"require_markers":true,"reply_language":"ru"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	p := Paths{
@@ -508,6 +508,9 @@ func TestFollowupLanguage(t *testing.T) {
 	bare := "This reply is long enough to be a final answer and it cites nothing."
 
 	p := testPaths(t)
+	if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	en := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"en","text":`+jsonString(bare)+`}`)
 	msg, _ := en["followup_message"].(string)
 	if !strings.Contains(msg, "add non-empty lines") || !strings.Contains(msg, "ЦЕЛЬ:") {
@@ -515,7 +518,7 @@ func TestFollowupLanguage(t *testing.T) {
 	}
 
 	p = testPaths(t)
-	if err := os.WriteFile(p.Rules, []byte(`{"reply_language":"ru"}`), 0o644); err != nil {
+	if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true,"reply_language":"ru"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	ru := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"ru","text":`+jsonString(bare)+`}`)
@@ -539,7 +542,7 @@ func TestFollowupLanguage(t *testing.T) {
 	}
 
 	p = testPaths(t)
-	if err := os.WriteFile(p.Rules, []byte(`{"reply_language":"ru","canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
+	if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true,"reply_language":"ru","canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(p.Root, "AGENTS.md"), []byte("drift-guard-canary: pending\n"), 0o644); err != nil {
@@ -557,13 +560,16 @@ func TestFollowupLanguage(t *testing.T) {
 
 	t.Setenv("DRIFT_GUARD_REPLY_LANGUAGE", "ru")
 	p = testPaths(t)
+	if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	fromEnv := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"env","text":`+jsonString(bare)+`}`)
 	msg, _ = fromEnv["followup_message"].(string)
 	if !strings.Contains(msg, "добавьте") {
 		t.Fatalf("env language: %q", msg)
 	}
 
-	if err := os.WriteFile(p.Rules, []byte(`{"reply_language":"en"}`), 0o644); err != nil {
+	if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true,"reply_language":"en"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	rulesWin := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"rules-win","text":`+jsonString(bare)+`}`)
@@ -585,6 +591,7 @@ func TestFollowupLanguage(t *testing.T) {
 		files = append(files, "docs/rules/file-"+strings.Repeat("й", 8)+".md")
 	}
 	rules, err := json.Marshal(map[string]any{
+		"require_markers": true,
 		"reply_language":  "ru",
 		"test_command":    longCmd,
 		"test_path_globs": []string{"**/*.py"},

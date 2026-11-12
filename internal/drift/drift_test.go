@@ -266,10 +266,10 @@ func TestScanFixtures(t *testing.T) {
 		file string
 		want []string
 	}{
-		{"fixtures/phase0/transcripts/reply-language-synthetic.json", []string{"reply-language", "answer-markers"}},
-		{"fixtures/phase0/transcripts/restart-claim-synthetic.json", []string{"answer-markers"}},
-		{"fixtures/phase0/transcripts/flip-synthetic.json", []string{"answer-markers", "sycophancy"}},
-		{"fixtures/phase0/transcripts/canary-synthetic.json", []string{"answer-markers", "answered-from-memory", "canary-read"}},
+		{"fixtures/phase0/transcripts/reply-language-synthetic.json", []string{"reply-language"}},
+		{"fixtures/phase0/transcripts/restart-claim-synthetic.json", []string{}},
+		{"fixtures/phase0/transcripts/flip-synthetic.json", []string{"sycophancy"}},
+		{"fixtures/phase0/transcripts/canary-synthetic.json", []string{"answered-from-memory", "canary-read"}},
 	}
 	for _, tc := range cases {
 		res, err := ScanFile(filepath.Join(root, tc.file), logPath, time.Now().UTC())
