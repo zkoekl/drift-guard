@@ -313,7 +313,7 @@ func isToolHook(event string) bool {
 // prompt, and lazily on the first tool hook when those events did not run
 // (Cursor cloud agents do not fire sessionStart).
 func maybeRefreshCanary(event string, state *sessionState, p Paths, rf ruleFile, sid string) {
-	if state == nil || len(rf.Canary.Files) == 0 {
+	if state == nil || !rf.RequireMarkers || len(rf.Canary.Files) == 0 {
 		return
 	}
 	if !refreshesCanary(event) && (state.CanaryRefreshed || !isToolHook(event)) {

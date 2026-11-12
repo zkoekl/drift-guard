@@ -55,7 +55,7 @@ The global install answers "allow" and does nothing else until the session is on
 - Send `#dg` as its own word in the chat. Letter case does not matter. The wrapper's `DRIFT_GUARD_TAG` changes the tag.
 - Put `drift-guard.rules.json` in the project root.
 
-A per-project hook file is already on for that project. The same rules file names the reply language, the test command, and the canary files. Without it, `git push` is still denied and the language and test checks stay quiet.
+A per-project hook file is already on for that project. The same rules file names the reply language, the test command, and, with `require_markers`, the canary files. Without it, `git push` is still denied and the language and test checks stay quiet.
 
 ```json
 {
@@ -66,6 +66,8 @@ A per-project hook file is already on for that project. The same rules file name
   "canary": { "files": ["AGENTS.md"] }
 }
 ```
+
+`require_markers` is `false` by default. When it is `true`, a `stop` reply without non-empty `ЦЕЛЬ:`/`GOAL:`, `ИСТОЧНИК:`/`SOURCE:`, and `ДОКАЗАНО:`/`PROOF:` lines, or without the `ПРОЧИТАНО:`/`READ:` canary quote for `canary.files`, gets a short follow-up. The rules file shipped to agents does not ask for these lines. Add them to your own agent file if you turn this on.
 
 `unrequested_delete` is `ask`, `log`, or `off`. The default in an active session is `ask`. `ask` returns permission `ask` before a delete or replace the latest prompt did not request, and it does not deny the call, except in a Cursor cloud agent (`CURSOR_AGENT_WORKER_ID` or `CURSOR_WORKER_POOL_NAME`), where `ask` is ignored and the hook denies instead. `log` records the event and allows the call. `off` skips the check. When the session never received the prompt text, the event is disputed. The field list is in [`docs/METRICS.md`](docs/METRICS.md).
 

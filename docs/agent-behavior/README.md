@@ -2,7 +2,7 @@
 
 Short rules a coding agent can see, plus three procedures that are too long for every turn. This is Layer 0 from [`docs/PLAN.md`](../PLAN.md): advisory text. The checker is the enforcement. Incident notes are not part of the prompt.
 
-The source file is [`RULES.md`](RULES.md). <!-- rules-budget: lines=27 tokens=821 --> The cap is 80 lines and 1500 estimated tokens (`ceil(chars/4)`), counted on that file and again on the Cursor copy with its front matter. `python3 scripts/agent_rules.py` prints the counts and fails when a generated copy diverges or the cap breaks.
+The source file is [`RULES.md`](RULES.md). <!-- rules-budget: lines=17 tokens=401 --> The cap is 80 lines and 1500 estimated tokens (`ceil(chars/4)`), counted on that file and again on the Cursor copy with its front matter. `python3 scripts/agent_rules.py` prints the counts and fails when a generated copy diverges or the cap breaks.
 
 ## What to copy
 
@@ -20,9 +20,9 @@ Do not replace this repository's root `AGENTS.md` with the snippet. That file is
 
 ## Markers
 
-The parser is `internal/drift/semantic.go`. Names are case-insensitive. A value is the text after the colon, trimmed. An empty value does not count.
+Markers are off by default: `RULES.md` does not ask for them, and no check follows up on them. Set `"require_markers": true` in `drift-guard.rules.json` to turn on the follow-up for the three required lines and for the canary quote. Add the matching text to your own agent file then; the follow-up message names the lines. The parser is `internal/drift/semantic.go`. Names are case-insensitive. A value is the text after the colon, trimmed. An empty value does not count.
 
-| Marker | English alias | Required on the final reply | What the code does with it |
+| Marker | English alias | Required with `require_markers` | What the code does with it |
 | --- | --- | --- | --- |
 | `ЦЕЛЬ:` | `GOAL:` | Yes | `answer-markers` asks for a follow-up at `stop` when the line is missing or empty (at most two, not fail-closed). The goal line is part of the `anchor-miss` haystack. |
 | `ИСТОЧНИК:` | `SOURCE:` | Yes | Same follow-up. `marker-citation` disputes a `path:line` that was not opened, or a command that is absent from the log or did not exit 0. The file shape is `path.ext` or `path.ext:line` with no other words. |

@@ -31,7 +31,7 @@ Repeat the block. Then compare the plan to it.
 
 Read a constraint file again in this session before you quote it. Cite `path:line` on `ИСТОЧНИК:` / `SOURCE:`.
 
-When that file contains a line `drift-guard-canary: <code>`, the handoff and the next reply include:
+When `require_markers` is on and that file contains a line `drift-guard-canary: <code>`, the handoff and the next reply include:
 
 ```
 ПРОЧИТАНО: <file> <code>

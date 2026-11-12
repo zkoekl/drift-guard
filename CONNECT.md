@@ -37,7 +37,7 @@ Rules and skills, for every environment that will read them: [`docs/install/READ
 - `grok-bot`: hooks are impossible. Save `docs/install/skills/advisory-scan/SKILL.md` into the bot skill library.
 - `rules-only`: the copy in `docs/install/README.md` is the whole install.
 
-Language, tests, and the canary turn on through `drift-guard.rules.json`, as in the root `README.md`. This repo already has that file and the committed hook. Its canary file is `.drift-guard/canary.md`, which is gitignored, so a refresh does not appear in `git status`.
+Language and tests turn on through `drift-guard.rules.json`, as in the root `README.md`. This repo already has that file and the committed hook. The canary and marker follow-ups stay off unless the file sets `require_markers: true`. Its canary file is `.drift-guard/canary.md`, which is gitignored, so a refresh does not appear in `git status`.
 
 ## Verify
 
@@ -56,7 +56,7 @@ On a feature branch whose upstream is not protected, expect allow, then deny, th
 | protected git push (main, default, force, tags) | |
 | unrequested-delete ask | |
 | command log | |
-| stop follow-up (markers, canary, tests) | |
+| stop follow-up (tests; markers and canary only with `require_markers`) | |
 | prompt anchors and conversation heuristics | |
 | rules, skills, AGENTS.md | advisory |
 | `drift-guard scan` | advisory |

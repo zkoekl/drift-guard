@@ -186,7 +186,7 @@ func TestCanaryHookStop(t *testing.T) {
 		if err := os.WriteFile(secretPath(p), []byte(secret+"\n"), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		rules := `{"canary":{"files":["AGENTS.md","skills/example/SKILL.md"]}}`
+		rules := `{"require_markers":true,"canary":{"files":["AGENTS.md","skills/example/SKILL.md"]}}`
 		if err := os.WriteFile(p.Rules, []byte(rules), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -343,7 +343,7 @@ func TestCanaryHookStop(t *testing.T) {
 		// Quote only AGENTS.md so the skill code is missing and would follow up.
 		// This subtest checks the transcript path clears the read dispute for the quoted file
 		// by using a rules file with one file.
-		if err := os.WriteFile(p.Rules, []byte(`{"canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
+		if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true,"canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		out := mustHandle(t, p, `{"hook_event_name":"stop","conversation_id":"sess-e","transcript_path":`+jsonString(transcript)+`,"text":`+jsonString(reply)+`}`)
@@ -371,7 +371,7 @@ func TestScanCanaryFixture(t *testing.T) {
 	if res.Exit != 0 {
 		t.Fatalf("exit %d", res.Exit)
 	}
-	if strings.Join(res.RuleIDs, ",") != "answer-markers,answered-from-memory,canary-read" {
+	if strings.Join(res.RuleIDs, ",") != "answered-from-memory,canary-read" {
 		t.Fatalf("rules %v", res.RuleIDs)
 	}
 	if strings.Join(res.DisputedIDs, ",") != "answered-from-memory,canary-read" {
@@ -395,7 +395,7 @@ func TestScanCanaryFixture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(res.RuleIDs, ",") != "answer-markers,canary-code" {
+	if strings.Join(res.RuleIDs, ",") != "canary-code" {
 		t.Fatalf("stale scan %v", res.RuleIDs)
 	}
 	for _, id := range res.DisputedIDs {
@@ -414,7 +414,7 @@ func TestCanaryRefreshesOnFirstToolHook(t *testing.T) {
 	if err := os.WriteFile(secretPath(p), []byte(secret+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(p.Rules, []byte(`{"canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
+	if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true,"canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(p.Root, "AGENTS.md"), []byte("# Rules\n\ndrift-guard-canary: pending\n"), 0o644); err != nil {
@@ -451,7 +451,7 @@ func TestCanaryDoesNotAskToQuotePending(t *testing.T) {
 	if err := os.WriteFile(secretPath(p), []byte(secret+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(p.Rules, []byte(`{"canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
+	if err := os.WriteFile(p.Rules, []byte(`{"require_markers":true,"canary":{"files":["AGENTS.md"]}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(p.Root, "AGENTS.md"), []byte("drift-guard-canary: pending\n"), 0o644); err != nil {

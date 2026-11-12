@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `docs/agent-behavior/RULES.md` is marker-free: 17 lines, about 400 tokens, down from 27 lines and about 820 tokens. It no longer asks the agent for `ЦЕЛЬ:`/`ИСТОЧНИК:`/`ДОКАЗАНО:` lines or a canary quote.
+- The missing-marker follow-up and the stop-time canary check are off by default. The rules file setting `"require_markers": true` turns both back on, and also canary refresh on hooks. The `check`/`scan` input accepts the same field.
+
 ## [0.0.1-alpha] - 2026-11-12
 
 ### Added

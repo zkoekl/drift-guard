@@ -27,6 +27,7 @@ type FileInput struct {
 	AnchorMinShared  int             `json:"anchor_min_shared"`
 	PushbackPhrases  []string        `json:"pushback_phrases"`
 	AgreementPhrases []string        `json:"agreement_phrases"`
+	RequireMarkers   bool            `json:"require_markers"`
 	Markers          *struct {
 		Goal       []string `json:"goal"`
 		Source     []string `json:"source"`
@@ -127,6 +128,7 @@ func sidOf(in FileInput) string {
 
 func semanticInput(in FileInput, text string) SemanticInput {
 	cfg := semanticFromRules(loadRules(rulesPathFromEnv()))
+	cfg.RequireMarkers = cfg.RequireMarkers || in.RequireMarkers
 	if in.Markers != nil {
 		if len(in.Markers.Goal) > 0 {
 			cfg.Goal = in.Markers.Goal

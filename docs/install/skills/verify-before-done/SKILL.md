@@ -5,7 +5,7 @@ description: Use before a reply says work is done, works, passed, was fixed, was
 
 # Verify before done
 
-Use this with the drift-guard rules for a completion claim (rule 10), an extraction (rule 8), or a status line (rule 7). The final reply still has non-empty `ЦЕЛЬ:` / `GOAL:`, `ИСТОЧНИК:` / `SOURCE:`, and `ДОКАЗАНО:` / `PROOF:`.
+Use this with the drift-guard rules for a completion claim (rule 10), an extraction (rule 8), or a status line (rule 7). When `require_markers` is on in the rules file, the final reply has non-empty `ЦЕЛЬ:` / `GOAL:`, `ИСТОЧНИК:` / `SOURCE:`, and `ДОКАЗАНО:` / `PROOF:`.
 
 ## 1. Write the claim as one sentence
 
@@ -35,7 +35,7 @@ A file fact or a version inside the claim. Read that file again this session bef
 
 The status is blocked. Name the command that would decide the claim. Leave done, works, passed, fixed, restarted, and already-added out of the reply. Run some command that did exit 0 before you send a final reply, because an empty `ДОКАЗАНО:` line is a miss. That command is not a substitute for the check you still owe.
 
-## 5. Lines to emit
+## 5. Lines to emit (only with `require_markers`)
 
 ```
 ЦЕЛЬ: <user's goal, in their words>
