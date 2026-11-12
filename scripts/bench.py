@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Remeasure the Go hook and print nearest-rank percentiles.
 
-The published table is docs/phase0/bench.md (measured 2026-11-09). This
+The published table is docs/bench.md (measured 2026-11-09). This
 script does not rewrite that file and does not write raw samples into the
 tree. The JVM and GraalVM programs from that measurement are not in this
 tree. There is no default JDK path.
@@ -124,7 +124,7 @@ def main():
     build_go()
     measure("go", [str(ROOT / "bin" / "hookbench-go")], PAYLOAD)
     measure("go-hook", [str(ROOT / "bin" / "drift-guard"), "hook"], HOOK_PAYLOAD)
-    print("published table: docs/phase0/bench.md (this run does not rewrite it)")
+    print("published table: docs/bench.md (this run does not rewrite it)")
 
 
 if __name__ == "__main__":

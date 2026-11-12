@@ -363,7 +363,7 @@ func TestCanaryHookStop(t *testing.T) {
 
 func TestScanCanaryFixture(t *testing.T) {
 	root := repoRoot(t)
-	path := filepath.Join(root, "fixtures/phase0/transcripts/canary-synthetic.json")
+	path := filepath.Join(root, "fixtures/transcripts/canary-synthetic.json")
 	res, err := ScanFile(path, filepath.Join(t.TempDir(), "events.jsonl"), time.Now().UTC())
 	if err != nil {
 		t.Fatal(err)

@@ -1,4 +1,4 @@
-// Command hookbench is the minimal hook timed in docs/phase0/bench.md.
+// Command hookbench is the minimal hook timed in docs/bench.md.
 // It reads one JSON object, runs the git-push rule and the done-without-tests
 // rule, appends one JSON line, and writes one JSON object to stdout.
 package main

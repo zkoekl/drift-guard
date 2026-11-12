@@ -11,5 +11,3 @@ Four deterministic checks. No model. `drift-guard scan` exits 0. Disputed hits a
 | 4, memory | `answered-from-memory` | The final reply names a path or file that is not in the read set, or it names a dotted version (`1.2.3`) and the session read nothing. |
 
 Marker names, `anchor_min_shared`, and the phrase lists are optional fields in `drift-guard.rules.json`. A non-empty list replaces the built-in list. See `docs/semantic/rules.example.json`. Scan uses that file when `DRIFT_GUARD_RULES` or `./drift-guard.rules.json` is present.
-
-On a private case set, checks 2–4 together caught 3 of 24 drift cases with 0 of 12 false alarms. The missing-marker check fired on 24 of 24 of those cases and 12 of 12 controls, because those replies did not contain the marker lines. Citation, flip, and the memory check each caught 0 of 24 with 0 of 12 false alarms.

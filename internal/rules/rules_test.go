@@ -102,7 +102,7 @@ func TestMatchGlob(t *testing.T) {
 		{"gameplay/**", ".github/workflows/build.yml", false},
 		{"cmd/**", "cmd/drift-guard/main.go", true},
 		{".gitignore", ".gitignore", true},
-		{"docs/**", "docs/phase0/HOWTO.md", true},
+		{"docs/**", "docs/hooks/README.md", true},
 	}
 	for _, tc := range cases {
 		if got := MatchGlob(tc.pat, tc.name); got != tc.want {

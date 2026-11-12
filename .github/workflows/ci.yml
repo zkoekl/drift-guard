@@ -44,7 +44,6 @@ jobs:
         run: python3 scripts/run_scope_fixtures.py
       - name: agent rules
         run: python3 scripts/agent_rules.py
-      - run: sh scripts/stop_experiment.sh
       - name: Pull request scope
         if: github.event_name == 'pull_request'
         env:

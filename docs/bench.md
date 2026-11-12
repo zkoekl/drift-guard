@@ -1,4 +1,4 @@
-# Phase 0 latency
+# Hook latency
 
 These figures were measured by `scripts/bench.py` on 2026-11-09. They were not typed by hand. The raw samples are not in this tree. The Java hook used for the JVM and GraalVM rows is not in this tree. `scripts/bench.py` can remeasure the Go programs. It does not rewrite this file, and it has no default JDK path.
 
